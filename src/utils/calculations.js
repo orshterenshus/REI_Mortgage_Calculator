@@ -21,13 +21,6 @@ export const calculateAnnualPayment = (monthlyPayment) => {
   return monthlyPayment * 12;
 };
 
-// Calculate annual principal repayment
-// This is simplified for now
-export const calculateAnnualPrincipalRepayment = (mortgageAmount, years) => {
-  if (!mortgageAmount || !years) return 0;
-  return mortgageAmount / years;
-};
-
 // Calculate annual income
 export const calculateAnnualIncome = (monthlyRent) => {
   if (!monthlyRent) return 0;
@@ -93,16 +86,15 @@ export const generateYearlyForecast = async (
   // Calculate total investment
   const totalInvestment = calculateTotalInvestment(equity, purchaseExpenses, renovationCost, purchaseTax);
   
-  // IMPORTANT CHANGE: Use years as the term for choosing the mortgage payment table
-  // This will determine the payment based on the years parameter, not the mortgageYears parameter
+  // Calculate monthly payment
   const monthlyPayment = await calculateMonthlyPayment(
     mortgageAmount,
     annualInterestRate,
-    years  // Use years instead of mortgageYears for choosing the payment table
+    years
   );
   
-  // Calculate monthly principal repayment (simplified) - still use mortgageYears for actual loan term
-  const monthlyPrincipalRepayment = mortgageAmount / (mortgageYears * 12);
+  // Calculate monthly principal repayment using the new function
+  const monthlyPrincipalRepayment = calculateMonthlyPrincipalPayment(mortgageAmount, years);
   
   // Calculate annual income
   const annualIncome = calculateAnnualIncome(monthlyRent);
@@ -116,25 +108,12 @@ export const generateYearlyForecast = async (
   // Calculate annual cashflow
   const annualCashflow = calculateAnnualCashflow(annualNetIncome, annualPayment);
   
-  let currentRemainingLoan = mortgageAmount;
   let accumulatedCashflow = 0;
   
-  // Use years parameter for forecast length, not mortgageYears
+  // Use years parameter for forecast length
   for (let year = 1; year <= years; year++) {
-    // Calculate remaining loan using amortization - use mortgageYears for loan term
-    const monthlyRate = annualInterestRate / 100 / 12;
-    const totalPayments = mortgageYears * 12;  // Use mortgageYears for loan term
-    const paymentsCompleted = year * 12;
-    
-    if (paymentsCompleted < totalPayments) {
-      // Calculate remaining loan balance
-      const factor = Math.pow(1 + monthlyRate, totalPayments - paymentsCompleted);
-      const numerator = factor - 1;
-      const denominator = Math.pow(1 + monthlyRate, totalPayments) - 1;
-      currentRemainingLoan = mortgageAmount * (numerator / denominator) * factor;
-    } else {
-      currentRemainingLoan = 0;
-    }
+    // Calculate remaining loan using amortization formula
+    const currentRemainingLoan = calculateAnnualRemainingBalance(mortgageAmount, years, year);
     
     // Calculate property appreciation
     currentPropertyValue = currentPropertyValue * (1 + (annualAppreciationRate || 0) / 100);
@@ -366,4 +345,158 @@ export const generateForecast = async (inputs) => {
   }
   
   return forecast;
+};
+
+// Get principal payment for specific month and term
+export const getPrincipalPaymentForMonth = (years, month) => {
+  if (years === 25) {
+    if (month <= 3) return 178;
+    if (month <= 5) return 180;
+    if (month <= 7) return 182;
+    if (month <= 9) return 184;
+    if (month <= 11) return 186;
+    return 187;
+  } else if (years === 30) {
+    if (month <= 5) return 125;
+    if (month <= 8) return 126;
+    if (month <= 11) return 127;
+    return 128;
+  } else if (years === 20) {
+    if (month <= 3) return 261;
+    if (month <= 6) return 263;
+    if (month <= 9) return 268;
+    if (month <= 11) return 270;
+    return 271;
+  } else if (years === 15) {
+    if (month <= 2) return 400;
+    if (month <= 4) return 403;
+    if (month <= 6) return 407;
+    if (month <= 8) return 410;
+    if (month <= 10) return 413;
+    return 415;
+  } else if (years === 10) {
+    if (month <= 2) return 679;
+    if (month <= 4) return 684;
+    if (month <= 6) return 691;
+    if (month <= 8) return 695;
+    if (month <= 10) return 700;
+    return 704;
+  }
+  return 0;
+};
+
+// Calculate annual principal payment
+export const calculateAnnualPrincipalPayment = (mortgageAmount, years) => {
+  // Calculate loan multiplier
+  const multiplier = mortgageAmount / 100000;
+  
+  // Calculate total principal paid in first year
+  let annualPrincipalPayment = 0;
+  for (let month = 1; month <= 12; month++) {
+    // Calculate principal payment for this month
+    const monthlyPrincipal = getPrincipalPaymentForMonth(years, month) * multiplier;
+    annualPrincipalPayment += monthlyPrincipal;
+  }
+  
+  return Math.round(annualPrincipalPayment);
+};
+
+// Calculate remaining loan balance considering monthly principal payment changes
+export const calculateRemainingLoanBalance = (principal, years, monthsElapsed) => {
+  if (!principal || !years || monthsElapsed === undefined) return 0;
+
+  // Calculate loan multiplier
+  const multiplier = principal / 100000;
+  
+  // Calculate total principal paid so far
+  let totalPrincipalPaid = 0;
+  for (let month = 1; month <= monthsElapsed; month++) {
+    // Calculate principal payment for this month
+    const monthlyPrincipal = getPrincipalPaymentForMonth(years, month) * multiplier;
+    totalPrincipalPaid += monthlyPrincipal;
+  }
+  
+  // Calculate remaining balance
+  const remainingBalance = principal - totalPrincipalPaid;
+  
+  // Don't allow negative balance
+  return Math.max(0, Math.round(remainingBalance));
+};
+
+// Calculate annual remaining balance
+export const calculateAnnualRemainingBalance = (mortgageAmount, years, currentYear) => {
+  return calculateRemainingLoanBalance(mortgageAmount, years, currentYear * 12);
+};
+
+// Calculate monthly principal payment based on loan term
+export const calculateMonthlyPrincipalPayment = (mortgageAmount, years) => {
+  if (!mortgageAmount || !years) return 0;
+
+  // Define the principal payment rates per 100,000 ILS for different terms
+  const PRINCIPAL_RATES = {
+    30: 125,  // 30 years: 125 ש"ח
+    25: 178,  // 25 years: 178 ש"ח
+    20: 261,  // 20 years: 261 ש"ח
+    15: 400,  // 15 years: 400 ש"ח
+    10: 679   // 10 years: 679 ש"ח
+  };
+
+  // Get the closest term
+  let termYears;
+  if (years <= 10) termYears = 10;
+  else if (years > 10 && years <= 15) termYears = 15;
+  else if (years > 15 && years <= 20) termYears = 20;
+  else if (years > 20 && years <= 25) termYears = 25;
+  else termYears = 30;
+
+  // Get the rate for the term
+  const rate = PRINCIPAL_RATES[termYears];
+  
+  // Calculate the monthly principal payment
+  const multiplier = mortgageAmount / 100000;
+  return Math.round(rate * multiplier);
+};
+
+// Get initial principal portion of monthly payment based on loan term
+export const getInitialPrincipalPortion = (years) => {
+  // Initial principal portion per 100,000 ILS for different terms
+  const PRINCIPAL_PORTIONS = {
+    30: 125,  // 30 years: starts at 125 ש"ח
+    25: 178,  // 25 years: starts at 178 ש"ח
+    20: 261,  // 20 years: starts at 261 ש"ח
+    15: 400,  // 15 years: starts at 400 ש"ח
+    10: 679   // 10 years: starts at 679 ש"ח
+  };
+
+  // Get the closest term
+  let termYears;
+  if (years <= 10) termYears = 10;
+  else if (years > 10 && years <= 15) termYears = 15;
+  else if (years > 15 && years <= 20) termYears = 20;
+  else if (years > 20 && years <= 25) termYears = 25;
+  else termYears = 30;
+
+  return PRINCIPAL_PORTIONS[termYears];
+};
+
+// Get monthly increase in principal payment based on loan term
+export const getPrincipalMonthlyIncrease = (years) => {
+  // Monthly increase in principal payment per 100,000 ILS
+  const MONTHLY_INCREASES = {
+    30: 1,    // 30 years: increases by ~1 ש"ח per month
+    25: 1,    // 25 years: increases by ~1 ש"ח per month
+    20: 1,    // 20 years: increases by ~1 ש"ח per month
+    15: 1,    // 15 years: increases by ~1-2 ש"ח per month
+    10: 2     // 10 years: increases by ~2-3 ש"ח per month
+  };
+
+  // Get the closest term
+  let termYears;
+  if (years <= 10) termYears = 10;
+  else if (years > 10 && years <= 15) termYears = 15;
+  else if (years > 15 && years <= 20) termYears = 20;
+  else if (years > 20 && years <= 25) termYears = 25;
+  else termYears = 30;
+
+  return MONTHLY_INCREASES[termYears];
 }; 

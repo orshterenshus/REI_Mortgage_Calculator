@@ -12,7 +12,7 @@ import {
   calculateMortgageAmount,
   calculateMonthlyPayment,
   calculateAnnualPayment,
-  calculateAnnualPrincipalRepayment,
+  calculateAnnualPrincipalPayment,
   calculateAnnualIncome,
   calculateAnnualNetIncome,
   calculateAnnualCashflow,
@@ -21,6 +21,8 @@ import {
   calculateEquityYield,
   calculatePurchaseExpenses,
   generateYearlyForecast,
+  calculateMonthlyPrincipalPayment,
+  getPrincipalPaymentForMonth
 } from './utils/calculations';
 import { loadAllMortgageData } from './utils/mortgageTable';
 
@@ -221,16 +223,13 @@ const App = () => {
       const annualPayment = calculateAnnualPayment(monthlyPayment);
       console.log("Annual payment:", annualPayment);
 
-      // Calculate annual principal repayment
-      const annualPrincipalRepayment = calculateAnnualPrincipalRepayment(
-        mortgageAmount,
-        mortgageYears
-      );
+      // Calculate annual principal repayment using the new function
+      const annualPrincipalRepayment = calculateAnnualPrincipalPayment(mortgageAmount, years);
       console.log("Annual principal repayment:", annualPrincipalRepayment);
 
-      // Calculate monthly principal repayment
-      const monthlyPrincipalRepayment = annualPrincipalRepayment / 12;
-      console.log("Monthly principal repayment:", monthlyPrincipalRepayment);
+      // Calculate monthly principal repayment (initial value)
+      const monthlyPrincipalRepayment = getPrincipalPaymentForMonth(years, 1) * (mortgageAmount / 100000);
+      console.log("Monthly principal repayment (initial):", monthlyPrincipalRepayment);
 
       // Calculate annual income
       const annualIncome = calculateAnnualIncome(monthlyRent);

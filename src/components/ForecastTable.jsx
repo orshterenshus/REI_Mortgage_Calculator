@@ -7,6 +7,26 @@ const TableContainer = styled.div`
   overflow-x: auto;
 `;
 
+const StyledTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  
+  th, td {
+    padding: 0.75rem;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+  }
+  
+  th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+  }
+  
+  tr:nth-of-type(even) {
+    background-color: #f9f9f9;
+  }
+`;
+
 const ForecastTable = ({ forecast }) => {
   if (!forecast || !forecast.length) return null;
   
@@ -14,52 +34,28 @@ const ForecastTable = ({ forecast }) => {
     <TableContainer className="card">
       <h2>תחזית שנתית</h2>
       <div className="table-container">
-        <table>
+        <StyledTable>
           <thead>
             <tr>
-              <th>שנה</th>
+              <th>תשואה הונית</th>
+              <th>הון עצמי</th>
+              <th>יתרת הלוואה</th>
               <th>שווי נכס</th>
-              <th>מחיר שוק</th>
-              <th>יתרת משכנתה</th>
-              <th>הון עצמי נצבר</th>
-              <th>תזרים שנתי</th>
-              <th>תזרים מצטבר</th>
-              <th>רווח כולל באחוזים</th>
+              <th>השקעת נכס</th>
             </tr>
           </thead>
           <tbody>
             {forecast.map((item) => (
               <tr key={item.year}>
+                <td dir="ltr">{formatPercentage(item.equityPercentage)}%</td>
+                <td dir="ltr">{formatCurrency(item.equity)}</td>
+                <td dir="ltr">{formatCurrency(item.remainingLoan)}</td>
+                <td dir="ltr">{formatCurrency(item.marketValue)}</td>
                 <td>{item.year}</td>
-                <td>{formatCurrency(item.propertyValue)}</td>
-                <td>{formatCurrency(item.marketValue)}</td>
-                <td>{formatCurrency(item.remainingLoan)}</td>
-                <td>{formatCurrency(item.equity)}</td>
-                <td
-                  style={{
-                    color: item.yearlyCashflow >= 0 ? '#27ae60' : '#e74c3c',
-                  }}
-                >
-                  {formatCurrency(item.yearlyCashflow)}
-                </td>
-                <td
-                  style={{
-                    color: item.accumulatedCashflow >= 0 ? '#27ae60' : '#e74c3c',
-                  }}
-                >
-                  {formatCurrency(item.accumulatedCashflow)}
-                </td>
-                <td
-                  style={{
-                    color: item.totalProfitPercentage >= 0 ? '#27ae60' : '#e74c3c',
-                  }}
-                >
-                  {formatPercentage(item.totalProfitPercentage)}
-                </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </StyledTable>
       </div>
     </TableContainer>
   );

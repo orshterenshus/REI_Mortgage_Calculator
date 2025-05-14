@@ -12,7 +12,7 @@ import {
   calculateMortgageAmount,
   calculateMonthlyPayment,
   calculateAnnualPayment,
-  calculateAnnualPrincipalPayment,
+  calculateAnnualPrincipalRepayment,
   calculateAnnualIncome,
   calculateAnnualNetIncome,
   calculateAnnualCashflow,
@@ -21,10 +21,12 @@ import {
   calculateEquityYield,
   calculatePurchaseExpenses,
   generateYearlyForecast,
-  calculateMonthlyPrincipalPayment,
-  getPrincipalPaymentForMonth
 } from './utils/calculations';
-import { loadAllMortgageData } from './utils/mortgageTable';
+import { 
+  loadAllMortgageData, 
+  getMonthlyPrincipalRepayment,
+  getAnnualPrincipalRepayment
+} from './utils/mortgageTable';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -223,13 +225,23 @@ const App = () => {
       const annualPayment = calculateAnnualPayment(monthlyPayment);
       console.log("Annual payment:", annualPayment);
 
-      // Calculate annual principal repayment using the new function
-      const annualPrincipalRepayment = calculateAnnualPrincipalPayment(mortgageAmount, years);
-      console.log("Annual principal repayment:", annualPrincipalRepayment);
+      // Get exact monthly principal repayment for the first month
+      const monthlyPrincipalRepayment = getMonthlyPrincipalRepayment(
+        mortgageAmount,
+        years
+      );
+      console.log("Monthly principal repayment:", monthlyPrincipalRepayment);
 
-      // Calculate monthly principal repayment (initial value)
-      const monthlyPrincipalRepayment = getPrincipalPaymentForMonth(years, 1) * (mortgageAmount / 100000);
-      console.log("Monthly principal repayment (initial):", monthlyPrincipalRepayment);
+      // Calculate monthly interest payment (total payment - principal payment)
+      const monthlyInterestPayment = monthlyPayment - monthlyPrincipalRepayment;
+      console.log("Monthly interest payment:", monthlyInterestPayment);
+
+      // Get exact annual principal repayment (sum of all 12 months in first year)
+      const annualPrincipalRepayment = getAnnualPrincipalRepayment(
+        mortgageAmount,
+        years
+      );
+      console.log("Annual principal repayment:", annualPrincipalRepayment);
 
       // Calculate annual income
       const annualIncome = calculateAnnualIncome(monthlyRent);
@@ -242,6 +254,10 @@ const App = () => {
       // Calculate annual cashflow
       const annualCashflow = calculateAnnualCashflow(annualNetIncome, annualPayment);
       console.log("Annual cashflow:", annualCashflow);
+      
+      // Calculate monthly cashflow - חישוב תזרים מזומנים חודשי
+      const monthlyCashflow = Math.round(annualCashflow / 12);
+      console.log("Monthly cashflow:", monthlyCashflow);
 
       // Calculate total investment
       const totalInvestment = calculateTotalInvestment(
@@ -258,9 +274,9 @@ const App = () => {
 
       // Calculate equity yield
       const equityYield = calculateEquityYield(
-        totalInvestment,
         monthlyPrincipalRepayment,
-        annualCashflow
+        monthlyCashflow,
+        totalInvestment
       );
       console.log("Equity yield:", equityYield);
 
@@ -289,9 +305,11 @@ const App = () => {
         annualPayment,
         annualPrincipalRepayment,
         monthlyPrincipalRepayment,
+        monthlyInterestPayment,
         annualIncome,
         annualNetIncome,
         annualCashflow,
+        monthlyCashflow,
         totalInvestment,
         propertyYield,
         equityYield,
@@ -441,7 +459,10 @@ const App = () => {
 
         {results && (
           <>
-            <ResultsSummary results={results} inputs={inputs} />
+            <ResultsSummary 
+              results={results} 
+              inputs={inputs}
+            />
             
             <PropertyValueChart forecast={forecast} />
             <CashflowChart forecast={forecast} />

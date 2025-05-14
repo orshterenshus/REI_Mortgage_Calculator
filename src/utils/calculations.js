@@ -1,62 +1,71 @@
 import { yearsToPayments, loadMortgageDataForTerm, calculateMonthlyPayment as calculateMortgagePayment, getClosestTerm } from './mortgageTable';
 
-// Calculate purchase expenses
+// Calculate purchase expenses - חישוב הוצאות רכישה
 export const calculatePurchaseExpenses = (propertyValue, purchaseExpenseRate) => {
   if (!propertyValue || !purchaseExpenseRate) return 0;
   return (propertyValue * purchaseExpenseRate) / 100;
 };
 
-// Calculate mortgage amount
+// Calculate mortgage amount - חישוב סכום המשכנתא
 export const calculateMortgageAmount = (propertyValue, equity) => {
   if (!propertyValue || !equity) return 0;
   return propertyValue - equity;
 };
 
-// Alias for the mortgage table calculation
+// Alias for the mortgage table calculation - חישוב תשלום חודשי
 export const calculateMonthlyPayment = calculateMortgagePayment;
 
-// Calculate annual mortgage payment
+// Calculate annual mortgage payment - חישוב תשלום משכנתא שנתי
 export const calculateAnnualPayment = (monthlyPayment) => {
   if (!monthlyPayment) return 0;
   return monthlyPayment * 12;
 };
 
-// Calculate annual income
+// Calculate annual income - חישוב הכנסה שנתית
 export const calculateAnnualIncome = (monthlyRent) => {
   if (!monthlyRent) return 0;
   return monthlyRent * 12;
 };
 
-// Calculate annual net income
+// Calculate annual net income - חישוב הכנסה שנתית נטו
 export const calculateAnnualNetIncome = (annualIncome, expenseRate) => {
   if (!annualIncome) return 0;
-  return annualIncome * (1 - (expenseRate || 0) / 100);
+  // הנוסחה החדשה: הכנסה שנתית נטו = הכנסה שנתית - (הכנסה שנתית*אחוז הוצאה שנתית)
+  return annualIncome - (annualIncome * (expenseRate || 0) / 100);
 };
 
-// Calculate annual cashflow
+// Calculate annual cashflow - חישוב תזרים מזומנים שנתי
 export const calculateAnnualCashflow = (annualNetIncome, annualPayment) => {
   return annualNetIncome - annualPayment;
 };
 
-// Calculate property yield
+// Calculate property yield - חישוב תשואת נכס
 export const calculatePropertyYield = (marketValue, annualNetIncome) => {
   if (!marketValue || !annualNetIncome) return 0;
   return (annualNetIncome / marketValue) * 100;
 };
 
-// Calculate total investment
+// Calculate total investment - חישוב סך השקעה
 export const calculateTotalInvestment = (equity, purchaseExpenses, renovationCost, purchaseTax) => {
   return (equity || 0) + (purchaseExpenses || 0) + (renovationCost || 0) + (purchaseTax || 0);
 };
 
-// Calculate equity yield
-export const calculateEquityYield = (totalInvestment, monthlyPrincipalRepayment, annualCashflow) => {
+// Calculate equity yield - חישוב תשואה על הון (ברמה החודשית)
+export const calculateEquityYield = (monthlyPrincipalRepayment, monthlyCashflow, totalInvestment) => {
   if (!totalInvestment) return 0;
-  const annualPrincipalRepayment = monthlyPrincipalRepayment * 12;
-  return ((annualPrincipalRepayment + annualCashflow) / totalInvestment) * 100;
+  
+  // החישוב המעודכן: (החזר קרן חודשי + תזרים מזומנים חודשי) / (סך השקעה / 12) * 100
+  return ((monthlyPrincipalRepayment + monthlyCashflow) / (totalInvestment / 12)) * 100;
 };
 
-// Generate yearly forecast data
+// Calculate equity percentage - חישוב תשואה הונית (אחוז גידול בהון העצמי)
+export const calculateEquityPercentage = (equity, totalInvestment) => {
+  if (!totalInvestment || !equity) return 0;
+  // מחשב את אחוז התשואה ומוריד 100% מהתוצאה
+  return ((equity / totalInvestment) * 100) - 100;
+};
+
+// Generate yearly forecast data - יצירת תחזית לפי שנים
 export const generateYearlyForecast = async (
   years,
   propertyValue,
@@ -73,68 +82,76 @@ export const generateYearlyForecast = async (
 ) => {
   const forecast = [];
   
-  // Calculate initial values
+  // החישוב יהיה תמיד עד 30 שנה, ללא תלות בפרמטר years
+  const forecastYears = 30;
+  
+  // Calculate initial values - חישוב ערכים התחלתיים
   let currentPropertyValue = propertyValue;
   let currentMarketValue = marketValue || propertyValue;
   
-  // Calculate mortgage amount
+  // Calculate mortgage amount - חישוב סכום המשכנתא
   const mortgageAmount = calculateMortgageAmount(propertyValue, equity);
   
-  // Calculate purchase expenses
+  // Calculate purchase expenses - חישוב הוצאות רכישה
   const purchaseExpenses = calculatePurchaseExpenses(propertyValue, purchaseExpenseRate);
   
-  // Calculate total investment
+  // Calculate total investment - חישוב סך ההשקעה
   const totalInvestment = calculateTotalInvestment(equity, purchaseExpenses, renovationCost, purchaseTax);
   
-  // Calculate monthly payment
+  // Calculate monthly payment - חישוב תשלום חודשי
   const monthlyPayment = await calculateMonthlyPayment(
     mortgageAmount,
     annualInterestRate,
     years
   );
   
-  // Calculate monthly principal repayment using the new function
+  // Calculate monthly principal repayment - חישוב החזר קרן חודשי
   const monthlyPrincipalRepayment = calculateMonthlyPrincipalPayment(mortgageAmount, years);
   
-  // Calculate annual income
+  // Calculate annual income - חישוב הכנסה שנתית
   const annualIncome = calculateAnnualIncome(monthlyRent);
   
-  // Calculate annual net income
+  // Calculate annual net income - חישוב הכנסה שנתית נטו
   const annualNetIncome = calculateAnnualNetIncome(annualIncome, expenseRate);
   
-  // Calculate annual payment
+  // Calculate annual payment - חישוב תשלום שנתי
   const annualPayment = calculateAnnualPayment(monthlyPayment);
   
-  // Calculate annual cashflow
+  // Calculate annual cashflow - חישוב תזרים מזומנים שנתי
   const annualCashflow = calculateAnnualCashflow(annualNetIncome, annualPayment);
   
   let accumulatedCashflow = 0;
   
-  // Use years parameter for forecast length
-  for (let year = 1; year <= years; year++) {
-    // Calculate remaining loan using amortization formula
-    const currentRemainingLoan = calculateAnnualRemainingBalance(mortgageAmount, years, year);
+  // ייצור התחזית ל-30 שנה
+  for (let year = 1; year <= forecastYears; year++) {
+    // Calculate remaining loan using amortization formula - חישוב יתרת ההלוואה
+    // אם השנה הנוכחית גדולה ממספר השנים של ההלוואה, יתרת ההלוואה היא 0
+    const currentRemainingLoan = year > years ? 0 : calculateAnnualRemainingBalance(mortgageAmount, years, year);
     
-    // Calculate property appreciation
+    // Calculate property appreciation - חישוב עליית ערך הנכס
     currentPropertyValue = currentPropertyValue * (1 + (annualAppreciationRate || 0) / 100);
     
-    // Calculate market value appreciation
+    // Calculate market value appreciation - חישוב עליית ערך השוק
     currentMarketValue = currentMarketValue * (1 + (annualAppreciationRate || 0) / 100);
     
-    // Calculate accumulated cash flow
+    // Calculate accumulated cash flow - חישוב תזרים מזומנים מצטבר
     const yearlyCashflow = annualCashflow;
     accumulatedCashflow += yearlyCashflow;
     
-    // Calculate equity
+    // Calculate equity - חישוב הון עצמי
     const currentEquity = currentMarketValue - currentRemainingLoan;
     
-    // Calculate property yield
+    // Calculate property yield - חישוב תשואת נכס
     const propertyYield = calculatePropertyYield(currentMarketValue, annualNetIncome);
     
-    // Calculate equity yield
-    const equityYield = calculateEquityYield(totalInvestment, monthlyPrincipalRepayment, annualCashflow);
+    // Calculate equity yield - חישוב תשואה על הון
+    const monthlyCashflow = yearlyCashflow / 12; // חישוב תזרים מזומנים חודשי
+    const equityYield = calculateEquityYield(monthlyPrincipalRepayment, monthlyCashflow, totalInvestment);
     
-    // Calculate total profit percentage
+    // Calculate equity percentage - חישוב תשואה הונית
+    const equityPercentage = calculateEquityPercentage(currentEquity, totalInvestment);
+    
+    // Calculate total profit percentage - חישוב אחוז רווח כולל
     const totalProfit = (currentEquity - propertyValue) + accumulatedCashflow;
     const totalProfitPercentage = (totalProfit / totalInvestment) * 100;
     
@@ -149,7 +166,8 @@ export const generateYearlyForecast = async (
       annualNetIncome,
       yearlyCashflow,
       propertyYield,
-      equityYield
+      equityYield,
+      equityPercentage
     });
   }
   
@@ -157,7 +175,7 @@ export const generateYearlyForecast = async (
 };
 
 /**
- * Convert years to months
+ * Convert years to months - המרת שנים לחודשים
  * @param {number} years - Number of years
  * @returns {number} - Number of months
  */
@@ -165,12 +183,12 @@ export const yearsToMonths = (years) => {
   return years * 12;
 };
 
-// Calculate loan amount
+// Calculate loan amount - חישוב סכום ההלוואה
 export const calculateLoanAmount = (propertyValue, purchaseTax, renovationCost, purchaseExpenses, equity) => {
   return propertyValue + purchaseTax + renovationCost + purchaseExpenses - equity;
 };
 
-// Calculate monthly mortgage payment using the mortgage table data
+// Calculate monthly mortgage payment using the mortgage table data - חישוב תשלום משכנתא חודשי לפי טבלה
 export const calculateMonthlyMortgagePayment = async (loanAmount, annualInterestRate, mortgageYears) => {
   // First, load the mortgage data for the specified term
   const mortgageData = await loadMortgageDataForTerm(mortgageYears);
@@ -185,42 +203,42 @@ export const calculateMonthlyMortgagePayment = async (loanAmount, annualInterest
   return monthlyPayment;
 };
 
-// Calculate yearly rent
+// Calculate yearly rent - חישוב שכר דירה שנתי
 export const calculateYearlyRent = (monthlyRent) => {
   return monthlyRent * 12;
 };
 
-// Calculate yearly expenses
+// Calculate yearly expenses - חישוב הוצאות שנתיות
 export const calculateYearlyExpenses = (yearlyRent, expenseRate) => {
   return yearlyRent * (expenseRate / 100);
 };
 
-// Calculate yearly cash flow
+// Calculate yearly cash flow - חישוב תזרים מזומנים שנתי
 export const calculateYearlyCashFlow = (yearlyRent, yearlyMortgagePayment, yearlyExpenses) => {
   return yearlyRent - yearlyMortgagePayment - yearlyExpenses;
 };
 
-// Calculate ROI (Return on Investment)
+// Calculate ROI (Return on Investment) - חישוב תשואה על השקעה
 export const calculateROI = (yearlyCashFlow, totalInvestment) => {
   return (yearlyCashFlow / totalInvestment) * 100;
 };
 
-// Calculate yearly capital gain
+// Calculate yearly capital gain - חישוב רווח הון שנתי
 export const calculateYearlyCapitalGain = (marketValue, annualAppreciationRate) => {
   return marketValue * (annualAppreciationRate / 100);
 };
 
-// Calculate total yearly return
+// Calculate total yearly return - חישוב תשואה שנתית כוללת
 export const calculateTotalYearlyReturn = (yearlyCashFlow, yearlyCapitalGain) => {
   return yearlyCashFlow + yearlyCapitalGain;
 };
 
-// Calculate total yearly ROI
+// Calculate total yearly ROI - חישוב תשואה שנתית כוללת על ההשקעה
 export const calculateTotalYearlyROI = (totalYearlyReturn, totalInvestment) => {
   return (totalYearlyReturn / totalInvestment) * 100;
 };
 
-// Generate forecast data
+// Generate forecast data - יצירת תחזית כללית
 export const generateForecast = async (inputs) => {
   const {
     propertyValue,
@@ -237,24 +255,24 @@ export const generateForecast = async (inputs) => {
     annualInterestRate
   } = inputs;
 
-  // Calculate purchase expenses
+  // Calculate purchase expenses - חישוב הוצאות רכישה
   const purchaseExpenses = calculatePurchaseExpenses(propertyValue, purchaseExpenseRate);
   
-  // Calculate total investment
+  // Calculate total investment - חישוב סך ההשקעה
   const totalInvestment = calculateTotalInvestment(equity, purchaseExpenses, renovationCost, purchaseTax);
   
-  // Calculate initial monthly payment
+  // Calculate initial monthly payment - חישוב תשלום חודשי התחלתי
   const loanAmount = calculateLoanAmount(propertyValue, purchaseTax, renovationCost, purchaseExpenses, equity);
   const monthlyPayment = await calculateMonthlyMortgagePayment(loanAmount, annualInterestRate, mortgageYears);
   
-  // Calculate yearly values for the first year
+  // Calculate yearly values for the first year - חישוב ערכים שנתיים לשנה הראשונה
   const yearlyRent = calculateYearlyRent(monthlyRent);
   const yearlyMortgagePayment = monthlyPayment * 12;
   const yearlyExpenses = calculateYearlyExpenses(yearlyRent, expenseRate);
   const yearlyCashFlow = calculateYearlyCashFlow(yearlyRent, yearlyMortgagePayment, yearlyExpenses);
   const cashFlowROI = calculateROI(yearlyCashFlow, totalInvestment);
   
-  // Initialize forecast with first year
+  // Initialize forecast with first year - אתחול התחזית עם השנה הראשונה
   const forecast = [
     {
       year: 1,
@@ -272,7 +290,7 @@ export const generateForecast = async (inputs) => {
     }
   ];
   
-  // Calculate the first year's total yearly return and ROI
+  // Calculate the first year's total yearly return and ROI - חישוב תשואה כוללת לשנה הראשונה
   forecast[0].totalYearlyReturn = calculateTotalYearlyReturn(
     forecast[0].yearlyCashFlow,
     forecast[0].yearlyCapitalGain
@@ -283,51 +301,51 @@ export const generateForecast = async (inputs) => {
     totalInvestment
   );
   
-  // Generate forecast for remaining years
+  // Generate forecast for remaining years - יצירת תחזית לשנים הבאות
   for (let i = 1; i < years; i++) {
     const prevYear = forecast[i - 1];
     const yearIndex = i + 1;
     
-    // Apply annual appreciation to property value
+    // Apply annual appreciation to property value - חישוב עליית ערך הנכס
     const newPropertyValue = prevYear.propertyValue * (1 + annualAppreciationRate / 100);
     
-    // Calculate new yearly capital gain
+    // Calculate new yearly capital gain - חישוב רווח הון שנתי חדש
     const yearlyCapitalGain = calculateYearlyCapitalGain(newPropertyValue, annualAppreciationRate);
     
-    // Calculate new monthly rent (assume 2% increase per year)
+    // Calculate new monthly rent (assume 2% increase per year) - חישוב שכר דירה חודשי חדש
     const newMonthlyRent = prevYear.monthlyRent * 1.02;
     const newYearlyRent = calculateYearlyRent(newMonthlyRent);
     
-    // Calculate new yearly expenses
+    // Calculate new yearly expenses - חישוב הוצאות שנתיות חדשות
     const newYearlyExpenses = calculateYearlyExpenses(newYearlyRent, expenseRate);
     
-    // Monthly payment remains the same (fixed-rate mortgage)
+    // Monthly payment remains the same (fixed-rate mortgage) - תשלום חודשי נשאר קבוע
     const newMonthlyPayment = prevYear.monthlyPayment;
     const newYearlyMortgagePayment = newMonthlyPayment * 12;
     
-    // Calculate new yearly cash flow
+    // Calculate new yearly cash flow - חישוב תזרים מזומנים שנתי חדש
     const newYearlyCashFlow = calculateYearlyCashFlow(
       newYearlyRent,
       newYearlyMortgagePayment,
       newYearlyExpenses
     );
     
-    // Calculate new ROI
+    // Calculate new ROI - חישוב תשואה חדשה
     const newCashFlowROI = calculateROI(newYearlyCashFlow, totalInvestment);
     
-    // Calculate new total yearly return
+    // Calculate new total yearly return - חישוב תשואה שנתית כוללת חדשה
     const newTotalYearlyReturn = calculateTotalYearlyReturn(
       newYearlyCashFlow,
       yearlyCapitalGain
     );
     
-    // Calculate new total yearly ROI
+    // Calculate new total yearly ROI - חישוב אחוז תשואה שנתית כוללת חדש
     const newTotalYearlyROI = calculateTotalYearlyROI(
       newTotalYearlyReturn,
       totalInvestment
     );
     
-    // Add to forecast
+    // Add to forecast - הוספה לתחזית
     forecast.push({
       year: yearIndex,
       propertyValue: newPropertyValue,
@@ -347,7 +365,7 @@ export const generateForecast = async (inputs) => {
   return forecast;
 };
 
-// Get principal payment for specific month and term
+// Get principal payment for specific month and term - חישוב תשלום קרן לחודש ספציפי
 export const getPrincipalPaymentForMonth = (years, month) => {
   if (years === 25) {
     if (month <= 3) return 178;
@@ -385,15 +403,15 @@ export const getPrincipalPaymentForMonth = (years, month) => {
   return 0;
 };
 
-// Calculate annual principal payment
+// Calculate annual principal payment - חישוב תשלום קרן שנתי
 export const calculateAnnualPrincipalPayment = (mortgageAmount, years) => {
-  // Calculate loan multiplier
+  // Calculate loan multiplier - חישוב מכפיל הלוואה
   const multiplier = mortgageAmount / 100000;
   
-  // Calculate total principal paid in first year
+  // Calculate total principal paid in first year - חישוב סך הקרן המשולמת בשנה הראשונה
   let annualPrincipalPayment = 0;
   for (let month = 1; month <= 12; month++) {
-    // Calculate principal payment for this month
+    // Calculate principal payment for this month - חישוב תשלום קרן לחודש זה
     const monthlyPrincipal = getPrincipalPaymentForMonth(years, month) * multiplier;
     annualPrincipalPayment += monthlyPrincipal;
   }
@@ -401,38 +419,38 @@ export const calculateAnnualPrincipalPayment = (mortgageAmount, years) => {
   return Math.round(annualPrincipalPayment);
 };
 
-// Calculate remaining loan balance considering monthly principal payment changes
+// Calculate remaining loan balance considering monthly principal payment changes - חישוב יתרת הלוואה בהתחשב בשינויים חודשיים
 export const calculateRemainingLoanBalance = (principal, years, monthsElapsed) => {
   if (!principal || !years || monthsElapsed === undefined) return 0;
 
-  // Calculate loan multiplier
+  // Calculate loan multiplier - חישוב מכפיל הלוואה
   const multiplier = principal / 100000;
   
-  // Calculate total principal paid so far
+  // Calculate total principal paid so far - חישוב סך הקרן ששולמה עד כה
   let totalPrincipalPaid = 0;
   for (let month = 1; month <= monthsElapsed; month++) {
-    // Calculate principal payment for this month
+    // Calculate principal payment for this month - חישוב תשלום קרן לחודש זה
     const monthlyPrincipal = getPrincipalPaymentForMonth(years, month) * multiplier;
     totalPrincipalPaid += monthlyPrincipal;
   }
   
-  // Calculate remaining balance
+  // Calculate remaining balance - חישוב יתרה נותרת
   const remainingBalance = principal - totalPrincipalPaid;
   
-  // Don't allow negative balance
+  // Don't allow negative balance - לא לאפשר יתרה שלילית
   return Math.max(0, Math.round(remainingBalance));
 };
 
-// Calculate annual remaining balance
+// Calculate annual remaining balance - חישוב יתרת הלוואה שנתית
 export const calculateAnnualRemainingBalance = (mortgageAmount, years, currentYear) => {
   return calculateRemainingLoanBalance(mortgageAmount, years, currentYear * 12);
 };
 
-// Calculate monthly principal payment based on loan term
+// Calculate monthly principal payment based on loan term - חישוב תשלום קרן חודשי לפי תקופת הלוואה
 export const calculateMonthlyPrincipalPayment = (mortgageAmount, years) => {
   if (!mortgageAmount || !years) return 0;
 
-  // Define the principal payment rates per 100,000 ILS for different terms
+  // Define the principal payment rates per 100,000 ILS for different terms - הגדרת שיעורי תשלום קרן לכל 100,000 ש"ח
   const PRINCIPAL_RATES = {
     30: 125,  // 30 years: 125 ש"ח
     25: 178,  // 25 years: 178 ש"ח
@@ -441,7 +459,7 @@ export const calculateMonthlyPrincipalPayment = (mortgageAmount, years) => {
     10: 679   // 10 years: 679 ש"ח
   };
 
-  // Get the closest term
+  // Get the closest term - קבלת התקופה הקרובה ביותר
   let termYears;
   if (years <= 10) termYears = 10;
   else if (years > 10 && years <= 15) termYears = 15;
@@ -449,17 +467,17 @@ export const calculateMonthlyPrincipalPayment = (mortgageAmount, years) => {
   else if (years > 20 && years <= 25) termYears = 25;
   else termYears = 30;
 
-  // Get the rate for the term
+  // Get the rate for the term - קבלת הערך לתקופה
   const rate = PRINCIPAL_RATES[termYears];
   
-  // Calculate the monthly principal payment
+  // Calculate the monthly principal payment - חישוב תשלום קרן חודשי
   const multiplier = mortgageAmount / 100000;
   return Math.round(rate * multiplier);
 };
 
-// Get initial principal portion of monthly payment based on loan term
+// Get initial principal portion of monthly payment based on loan term - קבלת חלק הקרן הראשוני מהתשלום החודשי
 export const getInitialPrincipalPortion = (years) => {
-  // Initial principal portion per 100,000 ILS for different terms
+  // Initial principal portion per 100,000 ILS for different terms - חלק קרן ראשוני לכל 100,000 ש"ח
   const PRINCIPAL_PORTIONS = {
     30: 125,  // 30 years: starts at 125 ש"ח
     25: 178,  // 25 years: starts at 178 ש"ח
@@ -468,7 +486,7 @@ export const getInitialPrincipalPortion = (years) => {
     10: 679   // 10 years: starts at 679 ש"ח
   };
 
-  // Get the closest term
+  // Get the closest term - קבלת התקופה הקרובה ביותר
   let termYears;
   if (years <= 10) termYears = 10;
   else if (years > 10 && years <= 15) termYears = 15;
@@ -479,9 +497,9 @@ export const getInitialPrincipalPortion = (years) => {
   return PRINCIPAL_PORTIONS[termYears];
 };
 
-// Get monthly increase in principal payment based on loan term
+// Get monthly increase in principal payment based on loan term - קבלת הגידול החודשי בתשלום הקרן
 export const getPrincipalMonthlyIncrease = (years) => {
-  // Monthly increase in principal payment per 100,000 ILS
+  // Monthly increase in principal payment per 100,000 ILS - גידול חודשי בתשלום קרן לכל 100,000 ש"ח
   const MONTHLY_INCREASES = {
     30: 1,    // 30 years: increases by ~1 ש"ח per month
     25: 1,    // 25 years: increases by ~1 ש"ח per month
@@ -490,7 +508,7 @@ export const getPrincipalMonthlyIncrease = (years) => {
     10: 2     // 10 years: increases by ~2-3 ש"ח per month
   };
 
-  // Get the closest term
+  // Get the closest term - קבלת התקופה הקרובה ביותר
   let termYears;
   if (years <= 10) termYears = 10;
   else if (years > 10 && years <= 15) termYears = 15;

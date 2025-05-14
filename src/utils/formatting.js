@@ -11,14 +11,13 @@ export const formatCurrency = (value) => {
 };
 
 // Format percentage
-export const formatPercentage = (value) => {
-  if (value === undefined || value === null) return '0%';
+export const formatPercentage = (value, decimals = 2) => {
+  if (value === undefined || value === null) return '0';
   
   return new Intl.NumberFormat('he-IL', {
-    style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value / 100);
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(value);
 };
 
 // Format number with thousands separator

@@ -32,9 +32,11 @@ const ResultsSummary = ({ results, inputs }) => {
     annualPayment,
     annualPrincipalRepayment,
     monthlyPrincipalRepayment,
+    monthlyInterestPayment,
     annualIncome,
     annualNetIncome,
     annualCashflow,
+    monthlyCashflow,
     totalInvestment,
     propertyYield,
     equityYield,
@@ -90,6 +92,10 @@ const ResultsSummary = ({ results, inputs }) => {
           <div className="value">{formatCurrency(monthlyPrincipalRepayment)}</div>
         </div>
         <div className="result-card">
+          <h3>החזר ריבית חודשי</h3>
+          <div className="value">{formatCurrency(monthlyInterestPayment)}</div>
+        </div>
+        <div className="result-card">
           <h3>החזר קרן שנתי</h3>
           <div className="value">{formatCurrency(annualPrincipalRepayment)}</div>
         </div>
@@ -103,7 +109,7 @@ const ResultsSummary = ({ results, inputs }) => {
         </div>
         <div className="result-card">
           <h3>אחוז השבחה שנתי</h3>
-          <div className="value">{formatPercentage(inputs.annualAppreciationRate)}</div>
+          <div className="value">{formatPercentage(inputs.annualAppreciationRate)}%</div>
         </div>
       </div>
       
@@ -122,6 +128,12 @@ const ResultsSummary = ({ results, inputs }) => {
           <div className="value">{formatCurrency(annualNetIncome)}</div>
         </div>
         <div className="result-card">
+          <h3>תזרים מזומנים חודשי</h3>
+          <div className="value" style={{ color: monthlyCashflow >= 0 ? '#27ae60' : '#e74c3c' }}>
+            {formatCurrency(monthlyCashflow)}
+          </div>
+        </div>
+        <div className="result-card">
           <h3>תזרים מזומנים שנתי</h3>
           <div className="value" style={{ color: annualCashflow >= 0 ? '#27ae60' : '#e74c3c' }}>
             {formatCurrency(annualCashflow)}
@@ -129,12 +141,12 @@ const ResultsSummary = ({ results, inputs }) => {
         </div>
         <div className="result-card">
           <h3>תשואת נכס</h3>
-          <div className="value">{formatPercentage(propertyYield)}</div>
+          <div className="value">{formatPercentage(propertyYield)}%</div>
         </div>
         <div className="result-card">
           <h3>תשואה על הון</h3>
           <div className="value" style={{ color: equityYield >= 0 ? '#27ae60' : '#e74c3c' }}>
-            {formatPercentage(equityYield)}
+            {formatPercentage(equityYield)}%
           </div>
         </div>
       </div>

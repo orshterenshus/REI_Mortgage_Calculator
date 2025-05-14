@@ -30,28 +30,135 @@ import {
 
 const AppContainer = styled.div`
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 `;
 
 const Header = styled.header`
-  background-color: var(--primary-dark);
-  color: white;
-  padding: 1.5rem 0;
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  color: var(--text-dark);
+  padding: 2rem 0;
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+`;
+
+const HeaderContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const HeaderTitle = styled.h1`
-  color: white;
+  color: var(--text-dark);
   margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const HeaderSubtitle = styled.p`
+  color: var(--text-dark);
+  font-size: 1.2rem;
+  margin: 0;
+  font-weight: 300;
+  max-width: 700px;
+  opacity: 0.9;
+`;
+
+const MainNavbar = styled.nav`
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+`;
+
+const NavContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const NavLinks = styled.div`
+  display: flex;
+  gap: 1.5rem;
+`;
+
+const NavLink = styled.a`
+  color: var(--text-dark);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  position: relative;
+  
+  &:hover {
+    color: var(--primary);
+  }
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary);
+    transition: width 0.3s ease;
+  }
+  
+  &:hover:after {
+    width: 100%;
+  }
+`;
+
+const MainContent = styled.main`
+  flex: 1;
+  padding: 2rem 0;
+  background-color: var(--background);
+`;
+
+const Footer = styled.footer`
+  background-color: var(--text-dark);
+  color: white;
+  padding: 2rem 0;
+  text-align: center;
+`;
+
+const FooterContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+`;
+
+const FooterText = styled.p`
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
 `;
 
 const NotificationBanner = styled.div`
-  background-color: ${props => props.success ? '#27ae60' : '#e74c3c'};
+  background-color: ${props => props.success ? 'var(--accent)' : 'var(--error)'};
   color: white;
-  padding: 0.75rem;
+  padding: 1rem;
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  
+  &:before {
+    content: ${props => props.success ? '"✓"' : '"✗"'};
+    margin-left: 0.5rem;
+    font-weight: bold;
+  }
 `;
 
 // Fixed values for mortgage calculation (no longer exposed in UI)
@@ -433,45 +540,74 @@ const App = () => {
   return (
     <AppContainer>
       <Header>
-        <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
+        <HeaderContent>
+          <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
+          <HeaderSubtitle>המחשבון המקצועי לבדיקת כדאיות השקעה בנכסי נדל"ן</HeaderSubtitle>
+        </HeaderContent>
       </Header>
-      <div className="container">
-        {notification && (
-          <NotificationBanner success={notification.success}>
-            {notification.message}
-          </NotificationBanner>
-        )}
-        
-        {csvLoaded && (
-          <NotificationBanner success={true}>
-            נתוני המשכנתא נטענו מקובץ CSV
-          </NotificationBanner>
-        )}
-        
-        <InputForm
-          inputs={inputs}
-          setInputs={setInputs}
-          onCalculate={calculateResults}
-          onSave={handleSave}
-          onClear={handleClear}
-          isCalculating={isCalculating}
-        />
+      
+      <MainNavbar>
+        <NavContent>
+          <div>
+            <NavLink href="#" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
+              מחשבון השקעות
+            </NavLink>
+          </div>
+          <NavLinks>
+            <NavLink href="#">ראשי</NavLink>
+            <NavLink href="#">אודות</NavLink>
+            <NavLink href="#">צור קשר</NavLink>
+          </NavLinks>
+        </NavContent>
+      </MainNavbar>
+      
+      <MainContent>
+        <div className="container">
+          {notification && (
+            <NotificationBanner success={notification.success}>
+              {notification.message}
+            </NotificationBanner>
+          )}
+          
+          {csvLoaded && (
+            <NotificationBanner success={true}>
+              נתוני המשכנתא נטענו מקובץ CSV
+            </NotificationBanner>
+          )}
+          
+          <InputForm
+            inputs={inputs}
+            setInputs={setInputs}
+            onCalculate={calculateResults}
+            onSave={handleSave}
+            onClear={handleClear}
+            isCalculating={isCalculating}
+          />
 
-        {results && (
-          <>
-            <ResultsSummary 
-              results={results} 
-              inputs={inputs}
-            />
-            
-            <PropertyValueChart forecast={forecast} />
-            <CashflowChart forecast={forecast} />
-            <ProfitChart forecast={forecast} />
-            
-            <ForecastTable forecast={forecast} />
-          </>
-        )}
-      </div>
+          {results && (
+            <>
+              <ResultsSummary 
+                results={results} 
+                inputs={inputs}
+              />
+              
+              <PropertyValueChart forecast={forecast} />
+              <CashflowChart forecast={forecast} />
+              <ProfitChart forecast={forecast} />
+              
+              <ForecastTable forecast={forecast} />
+            </>
+          )}
+        </div>
+      </MainContent>
+      
+      <Footer>
+        <FooterContent>
+          <FooterText>
+            © כל הזכויות שמורות למחשבון השקעות נדל"ן {new Date().getFullYear()}
+          </FooterText>
+        </FooterContent>
+      </Footer>
     </AppContainer>
   );
 };

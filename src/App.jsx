@@ -145,7 +145,7 @@ const FooterText = styled.p`
 `;
 
 const NotificationBanner = styled.div`
-  background-color: ${props => props.success ? 'var(--accent)' : 'var(--error)'};
+  background-color: ${props => props.success ? 'var(--secondary)' : 'var(--error)'};
   color: white;
   padding: 1rem;
   text-align: center;

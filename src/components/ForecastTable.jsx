@@ -47,7 +47,9 @@ const ForecastTable = ({ forecast }) => {
           <tbody>
             {forecast.map((item) => (
               <tr key={item.year}>
-                <td dir="ltr">{formatPercentage(item.equityPercentage)}%</td>
+                <td dir="ltr" className={item.equityPercentage >= 0 ? 'profit-value' : 'loss-value'}>
+                  {formatPercentage(item.equityPercentage)}%
+                </td>
                 <td dir="ltr">{formatCurrency(item.equity)}</td>
                 <td dir="ltr">{formatCurrency(item.remainingLoan)}</td>
                 <td dir="ltr">{formatCurrency(item.marketValue)}</td>

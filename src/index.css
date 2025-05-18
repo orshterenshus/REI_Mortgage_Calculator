@@ -243,8 +243,17 @@ input, select, button {
 .result-card .value {
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: var(--text-dark);
   margin-top: 0.5rem;
+}
+
+/* צבעים מיוחדים לרווח והפסד */
+.profit-value {
+  color: var(--accent) !important;
+}
+
+.loss-value {
+  color: var(--error) !important;
 }
 
 .chart-container {
@@ -360,4 +369,15 @@ header {
 
 .nav-link:hover:after {
   width: 100%;
+}
+
+/* צבעים מיוחדים לרווח והפסד בתוך טבלאות */
+table td.profit-value {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+table td.loss-value {
+  color: var(--error);
+  font-weight: 600;
 } 

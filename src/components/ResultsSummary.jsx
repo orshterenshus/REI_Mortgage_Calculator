@@ -129,13 +129,13 @@ const ResultsSummary = ({ results, inputs }) => {
         </div>
         <div className="result-card">
           <h3>תזרים מזומנים חודשי</h3>
-          <div className="value" style={{ color: monthlyCashflow >= 0 ? '#27ae60' : '#e74c3c' }}>
+          <div className={`value ${monthlyCashflow >= 0 ? 'profit-value' : 'loss-value'}`}>
             {formatCurrency(monthlyCashflow)}
           </div>
         </div>
         <div className="result-card">
           <h3>תזרים מזומנים שנתי</h3>
-          <div className="value" style={{ color: annualCashflow >= 0 ? '#27ae60' : '#e74c3c' }}>
+          <div className={`value ${annualCashflow >= 0 ? 'profit-value' : 'loss-value'}`}>
             {formatCurrency(annualCashflow)}
           </div>
         </div>
@@ -145,7 +145,7 @@ const ResultsSummary = ({ results, inputs }) => {
         </div>
         <div className="result-card">
           <h3>תשואה על הון</h3>
-          <div className="value" style={{ color: equityYield >= 0 ? '#27ae60' : '#e74c3c' }}>
+          <div className={`value ${equityYield >= 0 ? 'profit-value' : 'loss-value'}`}>
             {formatPercentage(equityYield)}%
           </div>
         </div>

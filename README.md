@@ -1,95 +1,82 @@
-# מחשבון השקעות נדל"ן
+# Apartment Investment Calculator
 
-מחשבון מפורט עבור השקעות נדל"ן יד שנייה, המאפשר למשקיעים לבצע ניתוח מקיף של כדאיות העסקה.
+מחשבון השקעות בנדל"ן - אפליקציה לחישוב כדאיות השקעה בנכסי נדל"ן.
 
-## מה המחשבון מאפשר?
+## Project Structure
 
-- הזנת כל הנתונים הקשורים לרכישת דירה להשקעה:
-  - סכום הרכישה, הון עצמי, משכנתה
-  - מס רכישה ועלויות נלוות
-  - שיפוץ והוצאות נוספות
-  - שכירות חודשית והוצאות תחזוקה
-  - נתוני משכנתה ואפשרות להזנת תשלום חודשי מותאם
-  - הערכת עליית ערך הנכס ועליית שכירות
-  - מחיר שוק נוכחי
+This application follows a client-server architecture:
 
-- ניתוח פיננסי מקיף:
-  - תזרים מזומנים והחזר מהשקעה
-  - תשואה על הנכס ועל הון העצמי
-  - חישוב ערך הנכס והון עצמי נצבר לאורך זמן
-  - תשואת שוק בהתבסס על מחיר השוק הנוכחי
+- `/client` - React frontend application
+- `/server` - Node.js/Express backend with MongoDB integration
 
-- גרפים ויזואליים:
-  - שווי נכס מול יתרת משכנתה והון עצמי
-  - תזרים מצטבר לאורך השנים
-  - תשואה מצטברת לאורך זמן
+## Features
 
-- ניהול נתונים:
-  - שמירת נתונים מקומית בדפדפן (localStorage)
-  - אפשרות לשמור ולנקות נתונים
+- Real estate investment calculator
+- ROI, cash flow, and equity calculations
+- Mortgage payment calculations based on accurate mortgage tables
+- 30-year investment forecasting
+- Save and load investment scenarios
+- MongoDB database integration
 
-## איך להתקין ולהריץ את האפליקציה
+## Setup Instructions
 
-### דרישות מקדימות
-- Node.js (גרסה 14 ומעלה)
-- npm (מגיע עם Node.js)
+### Prerequisites
 
-### שלבי התקנה
+- Node.js (v14+)
+- MongoDB (local or cloud instance)
 
-1. הורידו או שכפלו את המאגר:
+### Installation
+
+1. Clone the repository
+2. Install dependencies for all projects:
 ```
-git clone [URL של המאגר]
+npm run install:all
 ```
 
-2. עברו לתיקיית הפרויקט:
+3. Set up MongoDB:
+   - Create a MongoDB database (locally or using MongoDB Atlas)
+   - Copy `server/.env.example` to `server/.env` and configure your database connection
+
+4. Start development servers (both client and server):
 ```
-cd apartment-investment-calculator
+npm run dev
 ```
 
-3. התקינו את התלויות:
-```
-npm install
-```
+### Production Deployment
 
-4. הריצו את האפליקציה במצב פיתוח:
-```
-npm start
-```
-
-5. האפליקציה תיפתח אוטומטית בדפדפן בכתובת `http://localhost:3001`
-
-### בנייה לייצור
-
-כדי ליצור גרסת ייצור של האפליקציה, הריצו:
+1. Build the client:
 ```
 npm run build
 ```
 
-הקבצים המוכנים יהיו בתיקיית `dist`.
+2. Start the server only:
+```
+npm start
+```
 
-## פרטיות
+## API Documentation
 
-כל הנתונים נשמרים מקומית בדפדפן שלך בלבד (localStorage) ולא נשלחים לשום שרת חיצוני.
+The server provides REST API endpoints for:
 
-## דוגמה לנתוני קלט
+- Storing and retrieving investment calculations
+- User authentication (future feature)
+- Performing calculations on the server side
 
-ערכי ברירת מחדל מוגדרים מראש בהתאם לדוגמה:
-- סכום רכישה: ₪1,600,000
-- אחוז מס רכישה: 3%
-- הון עצמי: ₪400,000
-- משכנתה: ₪1,200,000 ל-30 שנה בריבית 4%
-- שכירות חודשית: ₪4,000 עם 8% הוצאות תחזוקה
-- עליית ערך שנתית: 1%
-- מחיר שוק נוכחי: ₪1,700,000
+Refer to the `server/README.md` for detailed API documentation.
 
-## טכנולוגיות
+## Technology Stack
 
-- React - לבניית ממשק המשתמש
-- Chart.js - לגרפים ויזואליים
-- Emotion - לעיצוב מבוסס JavaScript
-- Webpack - לבנייה ופיתוח
-- localStorage API - לשמירת נתונים מקומית
+### Frontend
+- React.js
+- Emotion (CSS-in-JS)
+- Chart.js
+- Webpack
 
-## רישיון
+### Backend
+- Node.js
+- Express.js
+- MongoDB with Mongoose
 
-ISC 
+## Mortgage Data
+
+The application includes accurate mortgage payment tables for 10, 15, 20, 25, and 30-year terms at 4% interest rate. 

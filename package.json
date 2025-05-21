@@ -4,9 +4,20 @@
   "description": "מחשבון השקעות נדל\"ן",
   "main": "index.js",
   "scripts": {
-    "start": "webpack serve --mode development",
-    "build": "webpack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm run start:server",
+    "client": "cd client && npm start",
+    "server": "cd server && npm run dev",
+    "start:server": "cd server && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "copy-data": "node copy-mortgage-data.js",
+    "postinstall": "npm run copy-data",
+    "build": "cd client && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup": "node setup-env.js && npm run copy-data",
+    "dev:win": "concurrently \"cd server && npm run dev\" \"cd client && npm start\"",
+    "server:win": "cd server && npm run dev",
+    "fix-src": "node fix-src.js"
   },
   "keywords": [
     "real-estate",
@@ -19,6 +30,8 @@
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "chart.js": "^4.3.0",
+    "concurrently": "^8.2.1",
+    "mongoose": "^8.15.0",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",
     "process": "^0.11.10",

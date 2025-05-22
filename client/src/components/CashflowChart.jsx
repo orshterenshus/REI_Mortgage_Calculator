@@ -33,7 +33,6 @@ const CashflowChart = ({ forecast }) => {
 
   const labels = forecast.map((item) => `שנה ${item.year}`);
   const accumulatedCashflow = forecast.map((item) => item.accumulatedCashflow);
-  const yearlyCashflow = forecast.map((item) => item.yearlyCashflow);
 
   const options = {
     plugins: {
@@ -77,16 +76,6 @@ const CashflowChart = ({ forecast }) => {
         borderColor: 'rgba(39, 174, 96, 1)',
         borderWidth: 2,
         tension: 0.3,
-      },
-      {
-        label: 'תזרים שנתי',
-        data: yearlyCashflow,
-        fill: false,
-        backgroundColor: 'rgba(52, 152, 219, 0.7)',
-        borderColor: 'rgba(41, 128, 185, 1)',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        pointRadius: 3,
       },
     ],
   };

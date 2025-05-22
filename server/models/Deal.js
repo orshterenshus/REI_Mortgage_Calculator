@@ -49,7 +49,8 @@ const dealSchema = new mongoose.Schema({
   },
   annualInterestRate: {
     type: Number,
-    required: [true, 'Please provide the annual interest rate']
+    required: [true, 'Please provide the annual interest rate'],
+    default: 4.0
   },
   loanTerm: {
     type: Number,

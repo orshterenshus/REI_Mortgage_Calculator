@@ -1,6 +1,6 @@
 // Format currency in Israeli Shekel
 export const formatCurrency = (value) => {
-  if (value === undefined || value === null) return '₪0';
+  if (value === undefined || value === null || value === 0) return '-';
   
   return new Intl.NumberFormat('he-IL', {
     style: 'currency',

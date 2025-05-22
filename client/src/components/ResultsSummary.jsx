@@ -22,8 +22,18 @@ const NoteText = styled.p`
   text-align: center;
 `;
 
-const ResultsSummary = ({ results, inputs }) => {
+const ResultsSummary = ({ results, inputs, years }) => {
   if (!results) return null;
+  
+  // Create a merged inputs object that uses props provided or defaults
+  const mergedInputs = {
+    propertyValue: results.marketValue || 0,
+    equity: 0,
+    monthlyRent: 0,
+    annualAppreciationRate: 0,
+    annualInterestRate: 4.0, // Default value
+    ...inputs // Override with any available input values
+  };
   
   const { 
     purchaseExpenses,
@@ -44,7 +54,7 @@ const ResultsSummary = ({ results, inputs }) => {
   } = results;
   
   // Check if interest rate is around 4%
-  const isUsingTableData = Math.abs(inputs.annualInterestRate - 4.0) < 0.1;
+  const isUsingTableData = Math.abs(mergedInputs.annualInterestRate - 4.0) < 0.1;
   
   return (
     <SummaryContainer className="card">
@@ -54,7 +64,7 @@ const ResultsSummary = ({ results, inputs }) => {
       <div className="results-grid">
         <div className="result-card">
           <h3>סכום הרכישה</h3>
-          <div className="value">{formatCurrency(inputs.propertyValue)}</div>
+          <div className="value">{formatCurrency(mergedInputs.propertyValue)}</div>
         </div>
         <div className="result-card">
           <h3>הוצאות רכישה</h3>
@@ -62,7 +72,7 @@ const ResultsSummary = ({ results, inputs }) => {
         </div>
         <div className="result-card">
           <h3>הון עצמי</h3>
-          <div className="value">{formatCurrency(inputs.equity)}</div>
+          <div className="value">{formatCurrency(mergedInputs.equity)}</div>
         </div>
         <div className="result-card">
           <h3>משכנתא</h3>
@@ -109,7 +119,7 @@ const ResultsSummary = ({ results, inputs }) => {
         </div>
         <div className="result-card">
           <h3>אחוז השבחה שנתי</h3>
-          <div className="value">{formatPercentage(inputs.annualAppreciationRate)}%</div>
+          <div className="value">{formatPercentage(mergedInputs.annualAppreciationRate)}%</div>
         </div>
       </div>
       
@@ -117,7 +127,7 @@ const ResultsSummary = ({ results, inputs }) => {
       <div className="results-grid">
         <div className="result-card">
           <h3>הכנסה משכירות חודשית</h3>
-          <div className="value">{formatCurrency(inputs.monthlyRent)}</div>
+          <div className="value">{formatCurrency(mergedInputs.monthlyRent)}</div>
         </div>
         <div className="result-card">
           <h3>הכנסה שנתית</h3>

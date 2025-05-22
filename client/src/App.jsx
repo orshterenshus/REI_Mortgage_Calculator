@@ -8,11 +8,12 @@ import CashflowChart from './components/CashflowChart';
 import ProfitChart from './components/ProfitChart';
 import { saveData, loadData, clearData } from './utils/storage';
 import { saveCalculation } from './utils/fileDb';
+import { calculateInvestmentOnServer } from './services/investmentService';
 import {
   calculateMortgageAmount,
   calculateMonthlyPayment,
   calculateAnnualPayment,
-  calculateAnnualPrincipalRepayment,
+  calculateAnnualPrincipalPayment,
   calculateAnnualIncome,
   calculateAnnualNetIncome,
   calculateAnnualCashflow,
@@ -21,12 +22,11 @@ import {
   calculateEquityYield,
   calculatePurchaseExpenses,
   generateYearlyForecast,
+  calculateMonthlyPrincipalPayment
 } from './utils/calculations';
-import { 
-  loadAllMortgageData, 
-  getMonthlyPrincipalRepayment,
-  getAnnualPrincipalRepayment
-} from './utils/mortgageTable';
+import { calculateMonthlyPaymentFromSchedule } from './utils/mortgageCalculations';
+import { getLatestDeal, createDeal, updateDealInputs, mapDealToFormInputs } from './services/dealService';
+import api from './utils/api';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -195,7 +195,7 @@ const defaultInputs = {
   monthlyRent: 0,
   expenseRate: 0,
   // Hidden fields with fixed values
-  mortgageYears: FIXED_MORTGAGE_YEARS,
+  mortgageYears: 0,
   annualInterestRate: FIXED_ANNUAL_INTEREST_RATE,
 };
 
@@ -216,6 +216,7 @@ const App = () => {
   const [csvLoaded, setCsvLoaded] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [dbConnectionStatus, setDbConnectionStatus] = useState(false);
+  const [currentDealId, setCurrentDealId] = useState(null);
 
   // Check DB connection status
   useEffect(() => {
@@ -251,45 +252,52 @@ const App = () => {
     return () => clearTimeout(timerId);
   }, []);
 
-  // Load CSV data and reset app state
+  // Load latest deal or create a new one if none exists
   useEffect(() => {
-    // Load mortgage data from CSV
-    console.log("Initial load of mortgage data");
-    loadAllMortgageData()
-      .then(data => {
-        if (data) {
-          setCsvLoaded(true);
-          setNotification({
-            message: 'נתוני המשכנתא נטענו בהצלחה מקובץ CSV',
-            success: true
-          });
-          console.log("Mortgage data loaded successfully");
-          
-          // Hide notification after 5 seconds
-          setTimeout(() => {
-            setNotification(null);
-          }, 5000);
-        }
-      })
-      .catch(error => {
-        console.error('Failed to load CSV data:', error);
-        setNotification({
-          message: 'שגיאה בטעינת נתוני המשכנתא מקובץ CSV',
-          success: false
-        });
-        
-        // Hide notification after 5 seconds
-        setTimeout(() => {
-          setNotification(null);
-        }, 5000);
-      });
-    
-    // Always reset data on app start
-    clearData();
+    // Initialize application with default zero values
     setInputs(defaultInputs);
     setResults(null);
     setForecast([]);
-  }, []);
+    
+    // Only check for Spitzer tables availability, don't load deals
+    const checkSpitzerTables = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/schedules/check');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.schedulesCount > 0) {
+            setCsvLoaded(true);
+          } else if (data.isBackupData) {
+            setCsvLoaded(true);
+          } else {
+            setCsvLoaded(false);
+            setNotification({
+              message: 'אין נתוני לוחות שפיצר במסד, יש להריץ את סקריפט היבוא',
+              success: false
+            });
+            
+            // Hide notification after 5 seconds
+            setTimeout(() => {
+              setNotification(null);
+            }, 5000);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for Spitzer tables:', error);
+        setCsvLoaded(true); // Assume it's okay in case of error
+      }
+    };
+    
+    checkSpitzerTables();
+    
+    // Clear localStorage data
+    clearData();
+  }, [dbConnectionStatus]);
+  
+  // Update inputs handler - only update state, don't sync with DB automatically
+  const handleInputChange = (newInputs) => {
+    setInputs(newInputs);
+  };
 
   const calculateResults = async () => {
     try {
@@ -297,10 +305,32 @@ const App = () => {
       
       console.log("=== Starting new calculation ===");
       
+      // First, save current inputs to database if connected
+      if (dbConnectionStatus) {
+        try {
+          // First check if we need to create a new deal or update existing one
+          let dealId = currentDealId;
+          
+          if (!dealId) {
+            // Create a new deal with current inputs
+            const newDeal = await createDeal(inputs);
+            dealId = newDeal._id;
+            setCurrentDealId(dealId);
+            console.log('Created new deal with ID:', dealId);
+          } else {
+            // Update existing deal with current inputs
+            await updateDealInputs(dealId, inputs);
+            console.log('Updated existing deal with ID:', dealId);
+          }
+        } catch (error) {
+          console.error('Error syncing inputs with database before calculation:', error);
+        }
+      }
+      
       // Make a copy of inputs and ensure fixed values are set
       const calculationInputs = {
         ...inputs,
-        mortgageYears: FIXED_MORTGAGE_YEARS,
+        mortgageYears: inputs.years,
         annualInterestRate: FIXED_ANNUAL_INTEREST_RATE
       };
       
@@ -342,11 +372,7 @@ const App = () => {
       const mortgageAmount = calculateMortgageAmount(propertyValue, equity);
       console.log("Mortgage amount:", mortgageAmount);
 
-      // Reload mortgage data to ensure we have fresh data
-      console.log("Reloading mortgage data before calculation");
-      await loadAllMortgageData();
-      
-      // Calculate monthly payment - will use table-based calculation if interest rate is around 4%
+      // Calculate monthly payment - will use Spitzer schedule-based calculation
       console.log(`Calculating monthly payment using years=${years}`);
       let monthlyPayment = await calculateMonthlyPayment(
         mortgageAmount,
@@ -386,7 +412,7 @@ const App = () => {
       console.log("Annual payment:", annualPayment);
 
       // Get exact monthly principal repayment for the first month
-      const monthlyPrincipalRepayment = getMonthlyPrincipalRepayment(
+      const monthlyPrincipalRepayment = await calculateMonthlyPrincipalPayment(
         mortgageAmount,
         years
       );
@@ -396,11 +422,8 @@ const App = () => {
       const monthlyInterestPayment = monthlyPayment - monthlyPrincipalRepayment;
       console.log("Monthly interest payment:", monthlyInterestPayment);
 
-      // Get exact annual principal repayment (sum of all 12 months in first year)
-      const annualPrincipalRepayment = getAnnualPrincipalRepayment(
-        mortgageAmount,
-        years
-      );
+      // Get exact annual principal repayment based on first year's average
+      const annualPrincipalRepayment = await calculateAnnualPrincipalPayment(mortgageAmount, years);
       console.log("Annual principal repayment:", annualPrincipalRepayment);
 
       // Calculate annual income
@@ -474,6 +497,7 @@ const App = () => {
         propertyYield,
         equityYield,
         marketValue: marketValue || propertyValue,
+        annualInterestRate: FIXED_ANNUAL_INTEREST_RATE,
       };
       
       console.log("Final calculated results:", calculatedResults);
@@ -481,30 +505,41 @@ const App = () => {
       setResults(calculatedResults);
       setForecast(forecastData);
 
-      // Save to localStorage
+      // Save to localStorage for backup
       saveData({
         inputs: calculationInputs,
         results: calculatedResults,
         forecast: forecastData,
       });
 
-      // Save to file and DB
-      const saveResult = await saveCalculation({
-        inputs: calculationInputs,
-        results: calculatedResults,
-        forecast: forecastData
-      });
-
-      if (saveResult.success) {
-        setNotification({
-          message: saveResult.message || `החישוב נשמר בהצלחה: ${saveResult.filename}`,
-          success: true
-        });
+      // Save results to current deal in DB if connected
+      if (dbConnectionStatus && currentDealId) {
+        try {
+          // Update the current deal with results and forecast
+          await api.put(`/deals/${currentDealId}`, {
+            results: calculatedResults,
+            forecast: forecastData
+          });
+          
+          console.log('Results saved to DB successfully');
+        } catch (error) {
+          console.error('Error saving results to DB:', error);
+        }
       } else {
-        setNotification({
-          message: `שגיאה בשמירת החישוב: ${saveResult.error}`,
-          success: false
+        // Fallback to file/local save if DB not connected
+        const saveResult = await saveCalculation({
+          inputs: {
+            ...inputs,
+            mortgageYears: inputs.years,
+            annualInterestRate: FIXED_ANNUAL_INTEREST_RATE
+          },
+          results: calculatedResults,
+          forecast: forecastData
         });
+        
+        if (saveResult && saveResult.success) {
+          console.log(`Results saved to file: ${saveResult.filename}`);
+        }
       }
       
       setIsCalculating(false);
@@ -516,15 +551,78 @@ const App = () => {
       }, 5000);
 
     } catch (error) {
-      console.error('Error in calculations:', error);
+      console.error('Error during calculation:', error);
+      
       setNotification({
-        message: `שגיאה בחישוב: ${error.message}`,
+        message: 'שגיאה בביצוע החישוב',
+        success: false
+      });
+      
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  // חישוב תוצאות בשרת במקום בקליינט
+  const calculateResultsOnServer = async () => {
+    try {
+      setIsCalculating(true);
+      
+      console.log("=== Starting server-side calculation ===");
+      
+      // הכנת הנתונים לשרת - חשוב להשתמש בטווח השנים שהמשתמש הזין
+      const serverInputs = {
+        ...inputs,
+        mortgageYears: inputs.years, // טווח שנים מהמשתמש
+        annualInterestRate: FIXED_ANNUAL_INTEREST_RATE
+      };
+      
+      console.log("Sending inputs to server:", serverInputs);
+      
+      // שליחת הנתונים לשרת לחישוב
+      const serverResult = await calculateInvestmentOnServer(serverInputs);
+      
+      if (serverResult.success) {
+        console.log("Server calculation succeeded:", serverResult.data);
+        
+        // עדכון התוצאות שהתקבלו מהשרת
+        setResults(serverResult.data.results);
+        setForecast(serverResult.data.forecast || []);
+        
+        // הצגת הודעת הצלחה
+        setNotification({
+          message: `החישוב בוצע בהצלחה בשרת. מזהה חישוב: ${serverResult.data.dealId}`,
+          success: true
+        });
+      } else {
+        // הצגת הודעת שגיאה
+        console.error("Server calculation failed:", serverResult.error);
+        setNotification({
+          message: `שגיאה בחישוב בשרת: ${serverResult.error}`,
+          success: false
+        });
+      }
+      
+      setIsCalculating(false);
+      
+      // הסתרת ההודעה אחרי 5 שניות
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      
+    } catch (error) {
+      console.error('Error in server calculation:', error);
+      setNotification({
+        message: `שגיאה בחישוב בשרת: ${error.message}`,
         success: false
       });
       
       setIsCalculating(false);
       
-      // Hide notification after 5 seconds
+      // הסתרת ההודעה אחרי 5 שניות
       setTimeout(() => {
         setNotification(null);
       }, 5000);
@@ -532,64 +630,111 @@ const App = () => {
   };
 
   const handleSave = async () => {
-    if (results) {
-      // Save to file and DB
-      const saveResult = await saveCalculation({
-        inputs: {
-          ...inputs,
-          mortgageYears: FIXED_MORTGAGE_YEARS,
-          annualInterestRate: FIXED_ANNUAL_INTEREST_RATE
-        },
-        results,
-        forecast: forecast
-      });
-
-      if (saveResult.success) {
+    try {
+      if (!results) {
         setNotification({
-          message: saveResult.message || `החישוב נשמר בהצלחה: ${saveResult.filename}`,
+          message: 'יש לבצע חישוב לפני שמירה',
+          success: false
+        });
+        
+        setTimeout(() => {
+          setNotification(null);
+        }, 3000);
+        
+        return;
+      }
+      
+      if (dbConnectionStatus) {
+        // בצע שמירה בדרך הדאטהבייס
+        const dealData = {
+          name: `חישוב ${new Date().toLocaleDateString('he-IL')}`,
+          propertyValue: inputs.propertyValue,
+          purchaseTaxRate: inputs.purchaseExpenseRate,
+          lawyerFee: 0,
+          otherExpenses: inputs.renovationCost,
+          equity: inputs.equity,
+          annualInterestRate: inputs.annualInterestRate,
+          loanTerm: inputs.years,
+          monthlyRent: inputs.monthlyRent,
+          annualExpensesRate: inputs.expenseRate,
+          annualAppreciationRate: inputs.annualAppreciationRate,
+          results: results,
+          forecast: forecast
+        };
+        
+        // Create a new deal instead of updating the current one to keep history
+        const newDeal = await createDeal(dealData);
+        setCurrentDealId(newDeal._id);
+        
+        setNotification({
+          message: 'החישוב נשמר בהצלחה במסד הנתונים',
           success: true
         });
       } else {
-        setNotification({
-          message: `שגיאה בשמירת החישוב: ${saveResult.error}`,
-          success: false
+        // Fallback to localStorage if DB not connected
+        saveData({
+          inputs,
+          results,
+          forecast,
         });
+        
+        // Also save to JSON file
+        const saveResult = await saveCalculation({
+          inputs,
+          results,
+          forecast
+        });
+        
+        if (saveResult && saveResult.success) {
+          setNotification({
+            message: `החישוב נשמר בהצלחה ל-localStorage ולקובץ: ${saveResult.filename}`,
+            success: true
+          });
+        } else {
+          setNotification({
+            message: 'החישוב נשמר ל-localStorage בלבד',
+            success: true
+          });
+        }
       }
       
-      // Hide notification after 5 seconds
       setTimeout(() => {
         setNotification(null);
-      }, 5000);
-    } else {
+      }, 3000);
+    } catch (error) {
+      console.error('שגיאה בשמירת החישוב:', error);
+      
       setNotification({
-        message: 'אנא חשב את התוצאות לפני השמירה.',
+        message: 'שגיאה בשמירת החישוב',
         success: false
       });
       
-      // Hide notification after 5 seconds
       setTimeout(() => {
         setNotification(null);
-      }, 5000);
+      }, 3000);
     }
   };
-
+  
   const handleClear = () => {
-    if (window.confirm('האם אתה בטוח שברצונך לנקות את כל הנתונים?')) {
-      setInputs(defaultInputs);
-      setResults(null);
-      setForecast([]);
-      clearData();
-      
-      setNotification({
-        message: 'הנתונים נוקו בהצלחה.',
-        success: true
-      });
-      
-      // Hide notification after 5 seconds
-      setTimeout(() => {
-        setNotification(null);
-      }, 5000);
-    }
+    // Clear all form inputs and results without saving to DB
+    setResults(null);
+    setForecast([]);
+    setInputs(defaultInputs);
+    
+    // Clear current deal ID so next calculation will create a new deal
+    setCurrentDealId(null);
+    
+    // Clear localStorage data
+    clearData();
+    
+    setNotification({
+      message: 'הטופס אופס בהצלחה',
+      success: true
+    });
+    
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000);
   };
 
   return (
@@ -597,21 +742,24 @@ const App = () => {
       <Header>
         <HeaderContent>
           <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
-          <HeaderSubtitle>המחשבון המקצועי לבדיקת כדאיות השקעה בנכסי נדל"ן</HeaderSubtitle>
+          <HeaderSubtitle>כלי מתקדם לחישוב כדאיות השקעה בנכסי נדל"ן ותחזית רווחיות ארוכת טווח</HeaderSubtitle>
         </HeaderContent>
+        
+        {dbConnectionStatus && (
+          <DbStatusIndicator>
+            <StatusDot connected={dbConnectionStatus} /> מחובר למסד נתונים
+          </DbStatusIndicator>
+        )}
       </Header>
       
       <MainNavbar>
         <NavContent>
-          <div>
-            <NavLink href="#" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
-              מחשבון השקעות
-            </NavLink>
-          </div>
+          <div>מחשבון השקעות</div>
+          
           <NavLinks>
-            <NavLink href="#">ראשי</NavLink>
-            <NavLink href="#">אודות</NavLink>
-            <NavLink href="#">צור קשר</NavLink>
+            <NavLink href="#">חישוב חדש</NavLink>
+            <NavLink href="#">הסבר מושגים</NavLink>
+            <NavLink href="#">עזרה</NavLink>
           </NavLinks>
         </NavContent>
       </MainNavbar>
@@ -624,33 +772,26 @@ const App = () => {
             </NotificationBanner>
           )}
           
-          {csvLoaded && (
-            <NotificationBanner success={true}>
-              נתוני המשכנתא נטענו מקובץ CSV
-            </NotificationBanner>
-          )}
-          
           <InputForm
             inputs={inputs}
-            setInputs={setInputs}
+            setInputs={handleInputChange}
             onCalculate={calculateResults}
             onSave={handleSave}
             onClear={handleClear}
             isCalculating={isCalculating}
           />
-
+          
           {results && (
             <>
-              <ResultsSummary 
-                results={results} 
-                inputs={inputs}
-              />
+              <ResultsSummary results={results} inputs={inputs} years={inputs.years} />
               
-              <PropertyValueChart forecast={forecast} />
-              <CashflowChart forecast={forecast} />
-              <ProfitChart forecast={forecast} />
+              <div className="charts-grid">
+                <PropertyValueChart forecast={forecast} />
+                <CashflowChart forecast={forecast} />
+                <ProfitChart forecast={forecast} results={results} />
+              </div>
               
-              <ForecastTable forecast={forecast} />
+              <ForecastTable forecast={forecast} years={inputs.years} />
             </>
           )}
         </div>
@@ -658,13 +799,7 @@ const App = () => {
       
       <Footer>
         <FooterContent>
-          <FooterText>
-            © כל הזכויות שמורות למחשבון השקעות נדל"ן {new Date().getFullYear()}
-          </FooterText>
-          <DbStatusIndicator>
-            <StatusDot connected={dbConnectionStatus} />
-            {dbConnectionStatus ? 'מחובר למסד הנתונים' : 'מנותק ממסד הנתונים'}
-          </DbStatusIndicator>
+          <FooterText>© {new Date().getFullYear()} מחשבון השקעות נדל"ן | כל הזכויות שמורות</FooterText>
         </FooterContent>
       </Footer>
     </AppContainer>

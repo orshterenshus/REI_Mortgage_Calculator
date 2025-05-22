@@ -215,6 +215,7 @@ const InputForm = ({ inputs, setInputs, onCalculate, onSave, onClear, isCalculat
               </>
             ) : 'חשב'}
           </Button>
+          
           <Button type="button" className="btn btn-secondary" onClick={onSave} disabled={isCalculating}>
             שמור
           </Button>

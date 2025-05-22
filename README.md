@@ -1,82 +1,96 @@
-# Apartment Investment Calculator
+# מחשבון השקעות נדל"ן - Apartment Investment Calculator
 
-מחשבון השקעות בנדל"ן - אפליקציה לחישוב כדאיות השקעה בנכסי נדל"ן.
+מחשבון מתקדם להערכת כדאיות השקעות נדל"ן ולתכנון משכנתאות, כולל חישובי תשואה, תזרים מזומנים, והשוואת מסלולי מימון.
 
-## Project Structure
+## תכונות עיקריות
 
-This application follows a client-server architecture:
+- חישוב תשואה על השקעות נדל"ן
+- תחזית תזרים מזומנים ל-30 שנה
+- חישוב תשלומי משכנתא מדויקים מבוססי לוחות שפיצר
+- שמירת והשוואת חלופות השקעה
+- ויזואליזציה של נתונים באמצעות גרפים ותרשימים
 
-- `/client` - React frontend application
-- `/server` - Node.js/Express backend with MongoDB integration
+## מבנה הפרויקט
 
-## Features
-
-- Real estate investment calculator
-- ROI, cash flow, and equity calculations
-- Mortgage payment calculations based on accurate mortgage tables
-- 30-year investment forecasting
-- Save and load investment scenarios
-- MongoDB database integration
-
-## Setup Instructions
-
-### Prerequisites
-
-- Node.js (v14+)
-- MongoDB (local or cloud instance)
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies for all projects:
 ```
-npm run install:all
-```
-
-3. Set up MongoDB:
-   - Create a MongoDB database (locally or using MongoDB Atlas)
-   - Copy `server/.env.example` to `server/.env` and configure your database connection
-
-4. Start development servers (both client and server):
-```
-npm run dev
+apartment-investment-calculator/
+├── client/                  # אפליקציית צד לקוח (React)
+│   ├── src/                 # קוד המקור של צד הלקוח
+│   │   ├── components/      # רכיבי React 
+│   │   ├── services/        # שירותים לתקשורת עם ה-API
+│   │   └── utils/           # פונקציות עזר וחישובים
+│   ├── public/              # קבצים סטטיים
+│   └── package.json         # הגדרות והתלויות של צד הלקוח
+│
+├── server/                  # שרת (Node.js, Express, MongoDB)
+│   ├── config/              # הגדרות תצורה
+│   ├── controllers/         # בקרים להתנהגות לוגית
+│   ├── data/                # קבצי נתונים 
+│   ├── models/              # מודלים של MongoDB
+│   ├── routes/              # הגדרות נתיבים (routes)
+│   ├── middlewares/         # middleware שונים
+│   ├── server.js            # קובץ כניסה ראשי של השרת
+│   └── import-schedules.js  # סקריפט ליבוא לוחות שפיצר
+│
+├── schedules_diyur_all.json # קובץ נתוני לוחות שפיצר
+├── PROJECT_ARCHITECTURE_GUIDE.md # מדריך ארכיטקטורת הפרויקט המפורט
+└── package.json             # הגדרות פרויקט ראשי
 ```
 
-### Production Deployment
+## התקנה והפעלה
 
-1. Build the client:
-```
-npm run build
-```
+### דרישות מוקדמות
 
-2. Start the server only:
-```
-npm start
-```
+- Node.js v14.x או גרסה חדשה יותר
+- MongoDB
+- Git
 
-## API Documentation
+### התקנה
 
-The server provides REST API endpoints for:
+1. שכפל את המאגר:
+   ```
+   git clone https://github.com/your-username/apartment-investment-calculator.git
+   cd apartment-investment-calculator
+   ```
 
-- Storing and retrieving investment calculations
-- User authentication (future feature)
-- Performing calculations on the server side
+2. התקן את התלויות:
+   ```
+   npm run install:all
+   ```
 
-Refer to the `server/README.md` for detailed API documentation.
+3. הגדר את קובץ הסביבה:
+   צור קובץ `.env` בתיקיית `server` עם התוכן הבא:
+   ```
+   MONGO_URI=mongodb://localhost:27017/apartment-calculator
+   PORT=5000
+   ```
 
-## Technology Stack
+4. יבא את נתוני לוחות השפיצר:
+   ```
+   node server/import-schedules.js
+   ```
 
-### Frontend
-- React.js
-- Emotion (CSS-in-JS)
-- Chart.js
-- Webpack
+### הפעלה
 
-### Backend
-- Node.js
-- Express.js
-- MongoDB with Mongoose
+- פיתוח (צד לקוח ושרת יחד):
+  ```
+  npm run dev
+  ```
 
-## Mortgage Data
+- שרת בלבד:
+  ```
+  npm run server
+  ```
 
-The application includes accurate mortgage payment tables for 10, 15, 20, 25, and 30-year terms at 4% interest rate. 
+- לקוח בלבד:
+  ```
+  npm run client
+  ```
+
+## מידע נוסף
+
+למידע מפורט על ארכיטקטורת הפרויקט, מודלים, וממשקי API, ראה את קובץ [`PROJECT_ARCHITECTURE_GUIDE.md`](./PROJECT_ARCHITECTURE_GUIDE.md).
+
+## רישיון
+
+כל הזכויות שמורות © 2024 

@@ -1,4 +1,5 @@
 import { calculateMonthlyPaymentFromSchedule, getFullPaymentSchedule } from './mortgageCalculations';
+import api from './api';
 
 // Calculate purchase expenses - חישוב הוצאות רכישה
 export const calculatePurchaseExpenses = (propertyValue, purchaseExpenseRate) => {
@@ -15,42 +16,58 @@ export const calculateMortgageAmount = (propertyValue, equity) => {
 // Alias for the mortgage calculation - חישוב תשלום חודשי
 export const calculateMonthlyPayment = async (loanAmount, annualInterestRate, years) => {
   if (!loanAmount || !years) return 0;
-  
+
   try {
-    console.log(`מחשב תשלום חודשי עבור הלוואה של ${loanAmount}₪ ל-${years} שנים בריבית ${annualInterestRate}%`);
-    const result = await calculateMonthlyPaymentFromSchedule(loanAmount, years, annualInterestRate);
-    console.log(`תוצאת חישוב תשלום חודשי: ${result.monthlyPayment}₪`);
-    return result.monthlyPayment;
+    // נסה קודם כל להביא את totalPayment מה-DB (shpizer)
+    console.log(`🔄 מנסה לקבל totalPayment מלוח shpizer עבור ${years} שנים`);
+    const response = await api.get('/shpizer', {
+      params: {
+        years,
+        interest: annualInterestRate,
+        purpose: 'דיור'
+      }
+    });
+    if (response.data && response.data.success && response.data.schedule) {
+      const totalPayment = response.data.schedule.totalPayment || (response.data.schedule.monthlyPayments && response.data.schedule.monthlyPayments[0]?.totalPayment);
+      if (totalPayment) {
+        const multiplier = loanAmount / 100000;
+        const payment = Math.round(totalPayment * multiplier);
+        console.log(`✅ תשלום חודשי מחושב מה-DB: ${payment}₪ (${totalPayment} × ${multiplier})`);
+        return payment;
+      }
+    }
+    // fallback if no totalPayment found
+    console.log('❌ לא נמצא totalPayment ב-db, עובר לחישוב רגיל');
   } catch (error) {
-    console.error('שגיאה בחישוב תשלום חודשי:', error);
-    
-    // גיבוי - במקרה של שגיאה נחזור לערכים הקבועים
-    const PAYMENT_RATES = {
-      10: 1012, // 10 years: 1012 ש"ח
-      15: 750,  // 15 years: 750 ש"ח
-      20: 627,  // 20 years: 627 ש"ח
-      25: 562,  // 25 years: 562 ש"ח
-      30: 525   // 30 years: 525 ש"ח
-    };
-
-    // קבלת התקופה הקרובה ביותר
-    let termYears;
-    if (years <= 10) termYears = 10;
-    else if (years > 10 && years <= 15) termYears = 15;
-    else if (years > 15 && years <= 20) termYears = 20;
-    else if (years > 20 && years <= 25) termYears = 25;
-    else termYears = 30;
-
-    // קבלת הערך לתקופה
-    const rate = PAYMENT_RATES[termYears];
-    
-    // חישוב תשלום חודשי
-    const multiplier = loanAmount / 100000;
-    const payment = Math.round(rate * multiplier);
-    
-    console.log(`משתמש בחישוב גיבוי לתשלום חודשי: ${payment}₪ (${rate} × ${multiplier})`);
-    return payment;
+    console.error('שגיאה בקבלת totalPayment מה-DB:', error);
   }
+
+  // גיבוי - במקרה של שגיאה נחזור לערכים הקבועים
+  const PAYMENT_RATES = {
+    10: 1012, // 10 years: 1012 ש"ח
+    15: 750,  // 15 years: 750 ש"ח
+    20: 627,  // 20 years: 627 ש"ח
+    25: 562,  // 25 years: 562 ש"ח
+    30: 525   // 30 years: 525 ש"ח
+  };
+
+  // קבלת התקופה הקרובה ביותר
+  let termYears;
+  if (years <= 10) termYears = 10;
+  else if (years > 10 && years <= 15) termYears = 15;
+  else if (years > 15 && years <= 20) termYears = 20;
+  else if (years > 20 && years <= 25) termYears = 25;
+  else termYears = 30;
+
+  // קבלת הערך לתקופה
+  const rate = PAYMENT_RATES[termYears];
+
+  // חישוב תשלום חודשי
+  const multiplier = loanAmount / 100000;
+  const payment = Math.round(rate * multiplier);
+
+  console.log(`משתמש בחישוב גיבוי לתשלום חודשי: ${payment}₪ (${rate} × ${multiplier})`);
+  return payment;
 };
 
 // Calculate annual mortgage payment - חישוב תשלום משכנתא שנתי
@@ -159,12 +176,12 @@ export const generateYearlyForecast = async (
   marketValue
 ) => {
   console.log(`יוצר תחזית שנתית לתקופה של ${years} שנים, משכנתא ל-${mortgageYears} שנים`);
-  
+
   const forecast = [];
-  
-  // החישוב יהיה תמיד עד 30 שנה, ללא תלות בפרמטר years
-  const forecastYears = 30;
-  
+
+  // החישוב יהיה עד 31 שנה (כולל שנה "31")
+  const forecastYears = 31;
+
   // המרת ערכים לא מספריים לברירת מחדל כדי למנוע NaN
   propertyValue = propertyValue || 0;
   equity = equity || 0;
@@ -177,92 +194,70 @@ export const generateYearlyForecast = async (
   expenseRate = expenseRate || 0;
   annualAppreciationRate = annualAppreciationRate || 0;
   marketValue = marketValue || propertyValue;
-  
+
   // Calculate mortgage amount - חישוב סכום המשכנתא
   const mortgageAmount = calculateMortgageAmount(propertyValue, equity);
-  
+
   // Calculate purchase expenses - חישוב הוצאות רכישה
   const purchaseExpenses = calculatePurchaseExpenses(propertyValue, purchaseExpenseRate);
-  
+
   // Calculate total investment - חישוב סך ההשקעה
   const totalInvestment = calculateTotalInvestment(equity, purchaseExpenses, renovationCost, purchaseTax);
-  
+
   try {
     console.log(`מנסה לקבל לוח תשלומים מלא ממסד הנתונים`);
-    
+
     // ניסיון לקבל לוח תשלומים מלא ממסד הנתונים אם אפשר
     const fullSchedule = await getFullPaymentSchedule(mortgageAmount, mortgageYears, annualInterestRate);
-    
+
     console.log(`התקבל לוח תשלומים מלא מהשרת`);
     console.log(`יש ${fullSchedule.monthlyPayments?.length || 0} חודשים בלוח השפיצר`);
-    
+
     // התשלום החודשי והחזרי הקרן והריבית יילקחו מממוצעי הלוח
     const { monthlyPayment, monthlyPrincipalRepayment, monthlyInterestPayment } = fullSchedule.averages;
-  
-  // Calculate annual income - חישוב הכנסה שנתית
-  const annualIncome = calculateAnnualIncome(monthlyRent);
-  
-  // Calculate annual net income - חישוב הכנסה שנתית נטו
-  const annualNetIncome = calculateAnnualNetIncome(annualIncome, expenseRate);
-  
-  // Calculate annual payment - חישוב תשלום שנתי
-  const annualPayment = calculateAnnualPayment(monthlyPayment);
-  
-  // Calculate annual cashflow - חישוב תזרים מזומנים שנתי
-  const annualCashflow = calculateAnnualCashflow(annualNetIncome, annualPayment);
-  
-  let accumulatedCashflow = 0;
-    let currentPropertyValue = marketValue; // משתמשים בערך השוק ההתחלתי
-  
-  // ייצור התחזית ל-30 שנה
-  for (let year = 1; year <= forecastYears; year++) {
+
+    // Calculate annual income - חישוב הכנסה שנתית
+    const annualIncome = calculateAnnualIncome(monthlyRent);
+
+    // Calculate annual net income - חישוב הכנסה שנתית נטו
+    const annualNetIncome = calculateAnnualNetIncome(annualIncome, expenseRate);
+
+    // Calculate annual payment - חישוב תשלום שנתי
+    const annualPayment = calculateAnnualPayment(monthlyPayment);
+
+    // Calculate annual cashflow - חישוב תזרים מזומנים שנתי
+    const annualCashflow = calculateAnnualCashflow(annualNetIncome, annualPayment);
+
+    let accumulatedCashflow = 0;
+    // שינוי: ערך הנכס בשנה הראשונה כבר כולל את ההתייקרות
+    let currentPropertyValue = marketValue * (1 + (annualAppreciationRate / 100));
+
+    // ייצור התחזית ל-31 שנה
+    for (let year = 1; year <= forecastYears; year++) {
       try {
-        // אכיפה מוחלטת: בשנה שמגיעה לסוף תקופת המשכנתא או אחריה - קו מפריד!
         let currentRemainingLoan = null;
-        
-        // בודקים בפשטות אם השנה היא לפני סוף המשכנתא
         if (year < mortgageYears) {
-          console.log(`שנה ${year} בתוך תקופת המשכנתא (${mortgageYears}), מחשב יתרה`);
-          // רק במקרה כזה מחשבים יתרת הלוואה
           currentRemainingLoan = calculateLoanScheduleForYears(mortgageAmount, mortgageYears, year, annualInterestRate);
         } else {
-          // אחרת - בכל מקרה מציגים קו מפריד!
-          console.log(`שנה ${year} בסוף או אחרי המשכנתא (${mortgageYears}) - בהכרח קו מפריד!`);
-          currentRemainingLoan = null; // בהכרח null בשביל להציג קו מפריד
+          currentRemainingLoan = null;
         }
-        
+
         // חישוב עליית ערך השוק לפי שיעור ההתייקרות השנתי
-        currentPropertyValue = year === 1 ? marketValue : currentPropertyValue * (1 + (annualAppreciationRate / 100));
-        
-        // חישוב תזרים מזומנים לשנה הנוכחית
-        // אם השנה גדולה או שווה למספר שנות ההלוואה, אין יותר תשלומי משכנתא
+        if (year > 1) {
+          currentPropertyValue = currentPropertyValue * (1 + (annualAppreciationRate / 100));
+        }
+
         const yearlyCashflow = year >= mortgageYears ? annualNetIncome : annualCashflow;
-        
-        // חישוב תזרים מזומנים מצטבר
         accumulatedCashflow += yearlyCashflow;
-        
-        // חישוב הון עצמי (שווי נכס פחות יתרת הלוואה)
         const currentEquity = currentPropertyValue - (currentRemainingLoan !== null ? currentRemainingLoan : 0);
-        
-        // חישוב תשואת נכס (הכנסה נטו חלקי שווי נכס)
         const propertyYield = calculatePropertyYield(currentPropertyValue, annualNetIncome);
-        
-        // חישוב תזרים מזומנים חודשי
         const monthlyCashflow = yearlyCashflow / 12;
-        
-        // חישוב תשואה על הון (החזר קרן חודשי + תזרים מזומנים חודשי) / (סך השקעה / 12)
-        // אם השנה גדולה או שווה למספר שנות ההלוואה, החזר הקרן החודשי הוא 0
         const effectiveMonthlyPrincipal = year >= mortgageYears ? 0 : monthlyPrincipalRepayment;
         const equityYield = calculateEquityYield(effectiveMonthlyPrincipal, monthlyCashflow, totalInvestment);
-        
-        // חישוב תשואה הונית (הון עצמי חלקי סך השקעה, פחות 100%)
         const equityPercentage = calculateEquityPercentage(currentEquity, totalInvestment);
-        
-        // חישוב אחוז רווח כולל
-        const totalProfit = (currentEquity - equity) + accumulatedCashflow; // הון עצמי נוכחי פחות הון עצמי התחלתי, ועוד תזרים מצטבר
+        const totalProfit = (currentEquity - equity) + accumulatedCashflow;
         const totalProfitPercentage = (totalProfit / totalInvestment) * 100;
-        
-        // יצירת רשומה לשנה הנוכחית
+
         const forecastEntry = {
           year,
           propertyValue: Math.round(currentPropertyValue),
@@ -277,12 +272,9 @@ export const generateYearlyForecast = async (
           equityYield: parseFloat(equityYield.toFixed(2)),
           equityPercentage: parseFloat(equityPercentage.toFixed(2))
         };
-        
-        // הוספת הרשומה לתחזית
         forecast.push(forecastEntry);
       } catch (error) {
         console.error(`שגיאה בחישוב שנה ${year}:`, error);
-        // במקרה של שגיאה, נוסיף שורה עם ערכים בסיסיים
         forecast.push({
           year,
           propertyValue: Math.round(currentPropertyValue),
@@ -299,9 +291,11 @@ export const generateYearlyForecast = async (
         });
       }
     }
-    
+    // לאחר יצירת התחזית ל-31 שנה, מחק את השנה האחרונה (שנה 31)
+    if (forecast.length > 30) {
+      forecast.pop();
+    }
     return forecast;
-    
   } catch (error) {
     console.error('שגיאה בקבלת לוח תשלומים מהשרת:', error);
     console.log('משתמש בחישוב מקומי (גיבוי)');
@@ -422,6 +416,10 @@ export const generateYearlyForecast = async (
       }
   }
   
+  // לאחר יצירת התחזית ל-30 שנה, מחק את השנה האחרונה (שנה 30)
+  if (forecast.length > 30) {
+    forecast.pop();
+  }
   return forecast;
   }
 };
@@ -605,6 +603,10 @@ export const generateForecast = async (inputs) => {
     });
   }
   
+  // לאחר יצירת התחזית ל-30 שנה, מחק את השנה האחרונה (שנה 30)
+  if (forecast.length > 30) {
+    forecast.pop();
+  }
   return forecast;
 };
 
@@ -756,71 +758,26 @@ export const calculateMonthlyPrincipalPayment = async (mortgageAmount, years) =>
 };
 
 // Calculate annual principal payment - חישוב תשלום קרן שנתי
-export const calculateAnnualPrincipalPayment = async (mortgageAmount, years) => {
+export const calculateAnnualPrincipalPayment = async (mortgageAmount, years, annualInterestRate = 4.0) => {
   if (!mortgageAmount || !years) return 0;
-  
-  console.log(`מחשב החזר קרן שנתי עבור הלוואה של ${mortgageAmount}₪ ל-${years} שנים`);
-  
-  // מספר הניסיונות המקסימלי לקבלת נתונים מהשרת
-  const MAX_RETRIES = 3;
-  let retryCount = 0;
-  let lastError = null;
 
-  while (retryCount < MAX_RETRIES) {
-    try {
-      console.log(`ניסיון ${retryCount + 1} לקבל נתוני החזר קרן שנתי מהשרת...`);
-      
-      // ניסיון לקבל את לוח התשלומים ממסד הנתונים
-      const result = await getFullPaymentSchedule(mortgageAmount, years, 4.0);
-      
-      // אם התקבל לוח תשלומים מלא עם פירוט חודשי
-      if (result && result.monthlyPayments && result.monthlyPayments.length >= 12) {
-        // חישוב סך הקרן המשולמת בשנה הראשונה מהלוח
-        let annualPrincipalPayment = 0;
-        for (let i = 0; i < 12; i++) {
-          // בדיקה אם קיים שדה principalPayment, ואם לא קיים ננסה principal
-          const principalPayment = result.monthlyPayments[i].principalPayment || result.monthlyPayments[i].principal || 0;
-          annualPrincipalPayment += principalPayment;
-        }
-        
-        console.log(`✅ החזר קרן שנתי (חושב מלוח שפיצר מלא): ${annualPrincipalPayment}₪`);
-        return Math.round(annualPrincipalPayment);
-      } 
-      
-      // אם לא התקבל לוח מלא, ננסה לקבל נתוני ממוצעים
-      console.log(`לא התקבל לוח מלא, מנסה לקבל ממוצעים...`);
-      const avgResult = await calculateMonthlyPaymentFromSchedule(mortgageAmount, years, 4.0);
-      
-      if (avgResult && avgResult.monthlyPrincipalRepayment) {
-        // חישוב שנתי לפי ממוצע חודשי
-        const annualPrincipalPayment = avgResult.monthlyPrincipalRepayment * 12;
-        
-        console.log(`✅ החזר קרן שנתי (חושב מממוצע חודשי מהדאטהבייס): ${annualPrincipalPayment}₪`);
-        return Math.round(annualPrincipalPayment);
-      }
-      
-      throw new Error('לא התקבלו נתונים מספיקים מהשרת');
-    } catch (error) {
-      lastError = error;
-      console.error(`שגיאה בניסיון ${retryCount + 1}:`, error.message);
-      retryCount++;
-      
-      if (retryCount < MAX_RETRIES) {
-        // השהייה בין ניסיונות (500ms, 1000ms, וכו')
-        const delayMs = 500 * retryCount;
-        console.log(`ממתין ${delayMs}ms לפני ניסיון נוסף...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      }
+  console.log(`מחשב החזר קרן שנתי עבור הלוואה של ${mortgageAmount}₪ ל-${years} שנים`);
+
+  try {
+    // קבל יתרת הלוואה לאחר שנה (1 = שנה ראשונה)
+    const remainingAfterYear = await calculateAnnualRemainingBalance(mortgageAmount, years, 1, annualInterestRate);
+    if (remainingAfterYear !== null && !isNaN(remainingAfterYear)) {
+      const annualPrincipal = mortgageAmount - remainingAfterYear;
+      console.log(`✅ החזר קרן שנתי (הפרש): ${annualPrincipal}₪`);
+      return Math.round(annualPrincipal);
     }
+    // אם לא הצליח, fallback
+    console.warn('❌ לא התקבלה יתרה תקינה לאחר שנה, עובר לחישוב גיבוי');
+  } catch (error) {
+    console.error('שגיאה בחישוב החזר קרן שנתי:', error);
   }
-  
-  console.error(`❌ כל הניסיונות לקבל נתוני החזר קרן שנתי מהשרת נכשלו. משתמש בחישוב מקומי כגיבוי.`);
-  console.error(`שגיאה אחרונה:`, lastError?.message);
-  
-  // חישוב מקומי כמוצא אחרון בלבד - רק אחרי כל הניסיונות הכושלים
-  console.warn('משתמש בחישוב גיבוי לתשלום קרן שנתי - שים לב שאלה אינם נתונים ממסד הנתונים');
-  
-  // טבלת סך החזרי קרן בשנה הראשונה לכל 100K
+
+  // גיבוי - חישוב לפי טבלה
   const ANNUAL_PRINCIPAL_RATES = {
     10: 8280, // 10 שנים: 8,280₪ החזר קרן שנתי לכל 100K
     15: 4900, // 15 שנים: 4,900₪ החזר קרן שנתי לכל 100K
@@ -828,18 +785,16 @@ export const calculateAnnualPrincipalPayment = async (mortgageAmount, years) => 
     25: 2190, // 25 שנים: 2,190₪ החזר קרן שנתי לכל 100K
     30: 1530  // 30 שנים: 1,530₪ החזר קרן שנתי לכל 100K
   };
-  
-  // קבלת התקופה הקרובה ביותר
+
   let termYears;
   if (years <= 10) termYears = 10;
   else if (years > 10 && years <= 15) termYears = 15;
   else if (years > 15 && years <= 20) termYears = 20;
   else if (years > 20 && years <= 25) termYears = 25;
   else termYears = 30;
-  
+
   const annualPrincipalPayment = Math.round(ANNUAL_PRINCIPAL_RATES[termYears] * (mortgageAmount / 100000));
   console.log(`החזר קרן שנתי (גיבוי לפי טבלאות): ${annualPrincipalPayment}₪`);
-  
   return annualPrincipalPayment;
 };
 

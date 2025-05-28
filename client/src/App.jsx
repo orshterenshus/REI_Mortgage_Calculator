@@ -26,6 +26,11 @@ import {
 import { calculateMonthlyPaymentFromSchedule } from './utils/mortgageCalculations';
 import { getLatestDeal, createDeal, updateDealInputs, mapDealToFormInputs } from './services/dealService';
 import api from './utils/api';
+import Login from './components/Login';
+import Register from './components/Register';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -89,6 +94,7 @@ const NavContent = styled.div`
 const NavLinks = styled.div`
   display: flex;
   gap: 1.5rem;
+  align-items: center;
 `;
 
 const NavLink = styled.a`
@@ -116,6 +122,29 @@ const NavLink = styled.a`
   &:hover:after {
     width: 100%;
   }
+`;
+
+const LogoutButton = styled.button`
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+  }
+`;
+
+const UserInfo = styled.span`
+  color: var(--text);
+  font-size: 0.9rem;
+  margin-right: 1rem;
 `;
 
 const MainContent = styled.main`
@@ -207,7 +236,28 @@ const PAYMENT_RATES = {
   30: 525   // 30 years: 525 ש"ח
 };
 
-const App = () => {
+// New AuthScreen component to handle authentication screens
+const AuthScreen = ({ showRegister, setShowRegister, showForgot, setShowForgot, showReset, setShowReset, handleLogin }) => {
+  const location = useLocation();
+  
+  if (location.pathname === '/reset-password') {
+    return <ResetPassword switchToLogin={() => { setShowReset(false); setShowRegister(false); setShowForgot(false); }} />;
+  }
+  if (showForgot) {
+    return <ForgotPassword switchToLogin={() => { setShowForgot(false); setShowRegister(false); }} />;
+  }
+  if (showRegister) {
+    return <Register onRegisterSuccess={() => setShowRegister(false)} switchToLogin={() => setShowRegister(false)} />;
+  }
+  return <Login onLogin={handleLogin} switchToRegister={() => setShowRegister(true)} switchToForgot={() => { setShowForgot(true); setShowRegister(false); }} />;
+};
+
+const AppInner = () => {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [inputs, setInputs] = useState(defaultInputs);
   const [results, setResults] = useState(null);
   const [forecast, setForecast] = useState([]);
@@ -216,6 +266,22 @@ const App = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [dbConnectionStatus, setDbConnectionStatus] = useState(false);
   const [currentDealId, setCurrentDealId] = useState(null);
+  const [showRegister, setShowRegister] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+  const location = useLocation();
+
+  const handleLogin = (user, token) => {
+    setUser(user);
+    setToken(token);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  };
 
   // Check DB connection status
   useEffect(() => {
@@ -736,7 +802,11 @@ const App = () => {
     }, 3000);
   };
 
-  return (
+  // Determine if user is authenticated
+  const isAuthenticated = user && token;
+
+  // Always return the same structure
+  return isAuthenticated ? (
     <AppContainer>
       <Header>
         <HeaderContent>
@@ -759,6 +829,8 @@ const App = () => {
             <NavLink href="#">חישוב חדש</NavLink>
             <NavLink href="#">הסבר מושגים</NavLink>
             <NavLink href="#">עזרה</NavLink>
+            {user && <UserInfo>שלום, {user.firstName || user.username}</UserInfo>}
+            <LogoutButton onClick={handleLogout}>התנתק</LogoutButton>
           </NavLinks>
         </NavContent>
       </MainNavbar>
@@ -802,7 +874,23 @@ const App = () => {
         </FooterContent>
       </Footer>
     </AppContainer>
+  ) : (
+    <AuthScreen
+      showRegister={showRegister}
+      setShowRegister={setShowRegister}
+      showForgot={showForgot}
+      setShowForgot={setShowForgot}
+      showReset={showReset}
+      setShowReset={setShowReset}
+      handleLogin={handleLogin}
+    />
   );
 };
+
+const App = () => (
+  <BrowserRouter>
+    <AppInner />
+  </BrowserRouter>
+);
 
 export default App; 

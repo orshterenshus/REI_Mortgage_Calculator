@@ -675,86 +675,44 @@ export const getPrincipalPaymentForMonth = (years, month) => {
 // Calculate monthly principal payment based on loan term - חישוב תשלום קרן חודשי לפי תקופת הלוואה
 export const calculateMonthlyPrincipalPayment = async (mortgageAmount, years) => {
   if (!mortgageAmount || !years) return 0;
-  
-  console.log(`מחשב החזר קרן חודשי עבור הלוואה של ${mortgageAmount}₪ ל-${years} שנים`);
 
-  // מספר הניסיונות המקסימלי לקבלת נתונים מהשרת
   const MAX_RETRIES = 3;
   let retryCount = 0;
   let lastError = null;
 
   while (retryCount < MAX_RETRIES) {
     try {
-      console.log(`ניסיון ${retryCount + 1} לקבל החזר קרן חודשי מהשרת...`);
-      
-      // ניסיון לקבל את תשלום הקרן ממסד הנתונים
-      const result = await calculateMonthlyPaymentFromSchedule(mortgageAmount, years, 4.0);
-      
-      if (result && result.monthlyPrincipalRepayment) {
-        console.log(`✅ התקבל החזר קרן חודשי מהשרת: ${result.monthlyPrincipalRepayment}₪`);
-        return result.monthlyPrincipalRepayment;
-      }
-      
-      // אם התגובה לא מכילה את הנתון הדרוש, ננסה שיטה אחרת
-      console.log(`לא התקבל ערך החזר קרן חודשי בתגובה, מנסה לקבל לוח תשלומים מלא...`);
-      
       // ניסיון לקבל את לוח התשלומים ממסד הנתונים
       const scheduleResult = await getFullPaymentSchedule(mortgageAmount, years, 4.0);
-      
-      // אם התקבל לוח תשלומים מלא
+
       if (scheduleResult && scheduleResult.monthlyPayments && scheduleResult.monthlyPayments.length > 0) {
-        // נשתמש בנתון החזר הקרן של החודש הראשון בלוח
-        const principalPayment = scheduleResult.monthlyPayments[0].principalPayment || 
+        // החזר קרן חודשי של החודש הראשון בלבד
+        const principalPayment = scheduleResult.monthlyPayments[0].principalPayment ||
                                  scheduleResult.monthlyPayments[0].principal || 0;
-        
-        console.log(`✅ התקבל החזר קרן חודשי מלוח שפיצר מלא: ${principalPayment}₪`);
         return Math.round(principalPayment);
       }
-      
       throw new Error('לא התקבלו נתונים מספיקים מהשרת');
     } catch (error) {
       lastError = error;
-      console.error(`שגיאה בניסיון ${retryCount + 1}:`, error.message);
       retryCount++;
-      
       if (retryCount < MAX_RETRIES) {
-        // השהייה בין ניסיונות (500ms, 1000ms, וכו')
-        const delayMs = 500 * retryCount;
-        console.log(`ממתין ${delayMs}ms לפני ניסיון נוסף...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
       }
     }
   }
-  
-  console.error(`❌ כל הניסיונות לקבל נתוני החזר קרן חודשי מהשרת נכשלו. משתמש בחישוב מקומי כגיבוי.`);
-  console.error(`שגיאה אחרונה:`, lastError?.message);
-  
-  // חישוב מקומי כמוצא אחרון בלבד - רק אחרי כל הניסיונות הכושלים
-  console.warn('משתמש בחישוב גיבוי לתשלום קרן חודשי - שים לב שאלה אינם נתונים ממסד הנתונים');
 
-  // טבלת שיעורי תשלום קרן לחודש ראשון לכל 100,000 ש"ח
+  // גיבוי - ערך קבוע
   const PRINCIPAL_RATES = {
-    10: 679, // 10 years: 679₪ לכל 100K
-    15: 400, // 15 years: 400₪ לכל 100K
-    20: 261, // 20 years: 261₪ לכל 100K
-    25: 178, // 25 years: 178₪ לכל 100K
-    30: 125  // 30 years: 125₪ לכל 100K
+    10: 679, 15: 400, 20: 261, 25: 178, 30: 125
   };
-
-  // קבלת התקופה הקרובה ביותר
   let termYears;
   if (years <= 10) termYears = 10;
   else if (years > 10 && years <= 15) termYears = 15;
   else if (years > 15 && years <= 20) termYears = 20;
   else if (years > 20 && years <= 25) termYears = 25;
   else termYears = 30;
-
-  // חישוב המכפיל והחזר החודשי
   const multiplier = mortgageAmount / 100000;
-  const monthlyPrincipal = Math.round(PRINCIPAL_RATES[termYears] * multiplier);
-  
-  console.log(`החזר קרן חודשי (גיבוי לפי טבלאות): ${monthlyPrincipal}₪`);
-  return monthlyPrincipal;
+  return Math.round(PRINCIPAL_RATES[termYears] * multiplier);
 };
 
 // Calculate annual principal payment - חישוב תשלום קרן שנתי

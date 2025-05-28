@@ -7,9 +7,8 @@ try {
   // ניקוי מודלים קיימים למניעת שימוש לא נכון
   const models = mongoose.modelNames();
   models.forEach(model => {
-    if (model === 'Deal' || model === 'Investment' || model === 'deals') {
+    if (model === 'Deal' || model === 'deals') {
       mongoose.deleteModel(model);
-      console.log(`מחיקת מודל: ${model}`);
     }
   });
 } catch (error) {
@@ -90,25 +89,13 @@ const dealSchema = new mongoose.Schema({
 // פעולות לפני שמירה
 dealSchema.pre('save', function(next) {
   // תיעוד פעולת השמירה
-  console.log(`🔄 שומר מסמך ב: ${this.collection.name}`);
-  
-  // בדיקת קולקציה
-  if (this.collection.name !== 'deals') {
-    console.error(`⛔ ניסיון שמירה בקולקציה שגויה: ${this.collection.name}`);
-    // אכיפת שימוש ב-deals
-    this.collection = mongoose.connection.collection('deals');
-    console.log('✅ הופנה מחדש לקולקציית deals');
-  }
-  
   next();
 });
 
 // פעולות לפני כל פעולת מסמך
 dealSchema.pre(/^find/, function() {
-  console.log(`🔍 מחפש מסמכים בקולקציה: ${this.model.collection.name}`);
   // וידוא שימוש בקולקציה הנכונה
   if (this.model.collection.name !== 'deals') {
-    console.log('⚠️ מחפש בקולקציה שגויה, מתקן לdeals');
     this._collection = mongoose.connection.collection('deals');
   }
 });
@@ -126,31 +113,9 @@ Object.defineProperty(DealModel, 'collection', {
     return mongoose.connection.collection('deals');
   },
   set: function() {
-    console.error('⛔ ניסיון לשנות את הקולקציה נחסם!');
     return mongoose.connection.collection('deals');
   }
 });
-
-// במקום הפרוקסי שגרם לבעיה, ננסה פתרון פשוט יותר
-// הוספת אירוע לאחר התחברות למסד הנתונים שיטפל בהפניה לקולקציה הנכונה
-mongoose.connection.on('connected', () => {
-  console.log('התחברות למונגו הושלמה - וידוא שימוש בקולקציית deals');
-  
-  // טיפול בשגיאות גישה לקולקציית investments
-  const originalCollection = mongoose.connection.collection;
-  if (originalCollection) {
-    mongoose.connection.collection = function(name) {
-      if (name === 'investments') {
-        console.log('ניסיון גישה לקולקציית investments - מפנה לdeals');
-        name = 'deals';
-      }
-      return originalCollection.call(this, name);
-    };
-  }
-});
-
-// קודם כל להדפיס את שם הקולקציה
-console.log('✅ מודל Deal נוצר עם קולקציית:', DealModel.collection.name);
 
 // ייצוא
 module.exports = DealModel; 

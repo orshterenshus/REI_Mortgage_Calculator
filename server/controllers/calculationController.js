@@ -94,12 +94,5 @@ module.exports = {
   createDeal,
   updateDeal,
   deleteDeal,
-  calculateDeal,
-  // For backward compatibility
-  getInvestments: getDeals,
-  getInvestmentById: getDealById,
-  createInvestment: createDeal,
-  updateInvestment: updateDeal,
-  deleteInvestment: deleteDeal,
-  calculateInvestment: calculateDeal
+  calculateDeal
 }; 

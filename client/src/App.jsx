@@ -8,7 +8,6 @@ import CashflowChart from './components/CashflowChart';
 import ProfitChart from './components/ProfitChart';
 import { saveData, loadData, clearData } from './utils/storage';
 import { saveCalculation } from './utils/fileDb';
-import { calculateInvestmentOnServer } from './services/investmentService';
 import {
   calculateMortgageAmount,
   calculateMonthlyPayment,

@@ -127,15 +127,12 @@ const getScheduleAverages = async (req, res) => {
  */
 const checkSchedulesAvailability = async (req, res) => {
   try {
-    console.log('בודק זמינות לוחות שפיצר...');
+    console.log('Checking Spitzer schedules availability...');
     const count = await Schedule.countDocuments();
-    console.log(`נמצאו ${count} לוחות במסד הנתונים`);
-    
+    console.log(`Found ${count} schedules in the database`);
     const years = await Schedule.distinct('years');
     const purposes = await Schedule.distinct('purpose');
-    
-    console.log('שנים זמינות:', years);
-    
+    console.log('Available years:', years);
     res.status(200).json({
       success: true,
       schedulesCount: count,
@@ -143,10 +140,10 @@ const checkSchedulesAvailability = async (req, res) => {
       availablePurposes: purposes
     });
   } catch (error) {
-    console.error('שגיאה בבדיקת זמינות לוחות שפיצר:', error);
+    console.error('Error checking Spitzer schedules availability:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'אירעה שגיאה בשרת בעת בדיקת זמינות לוחות שפיצר',
+      message: 'Server error while checking Spitzer schedules availability',
       error: error.message
     });
   }

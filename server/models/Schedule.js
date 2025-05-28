@@ -53,12 +53,18 @@ const scheduleSchema = new mongoose.Schema({
 // אינדקסים לייעול חיפושים
 scheduleSchema.index({ purpose: 1, years: 1, interest: 1 });
 
+// Simple in-memory cache for findMatchingSchedule
+const scheduleCache = {};
+
 // מתודה סטטית לחיפוש לוח תשלומים מתאים
 scheduleSchema.statics.findMatchingSchedule = async function(purpose, years, interest) {
   try {
-    console.log(`מחפש לוח שפיצר: מטרה=${purpose}, שנים=${years}, ריבית=${interest}%`);
-    
-    // קודם נבדוק אם קיים לוח מדויק
+    const cacheKey = `${purpose}_${years}_${interest}`;
+    if (scheduleCache[cacheKey]) {
+      //console.log(`🔄 Fetching Spitzer schedule from cache: ${cacheKey}`);
+      return scheduleCache[cacheKey];
+    }
+    //console.log(`🔍 Searching Spitzer schedule in DB: purpose=${purpose}, years=${years}, interest=${interest}%`);
     let schedule = await this.findOne({ 
       purpose, 
       years,
@@ -67,15 +73,14 @@ scheduleSchema.statics.findMatchingSchedule = async function(purpose, years, int
 
     // אם לא מצאנו, ננסה לחפש בצורה אחרת - נחפש מסמך לפי מטרה שמכיל את מספר השנים הנכון
     if (!schedule) {
-      console.log(`לא נמצא לוח מדויק. מנסה לחפש בצורה אחרת...`);
-      
+      //console.log(`No exact schedule found. Trying alternative search...`);
       try {
         // נחפש מסמך שתואם את מטרת ההלוואה (דיור)
         const purposeDoc = await this.findOne({ purpose });
         
         if (purposeDoc && purposeDoc[years]) {
           // אם מצאנו מסמך ויש בו נתונים למספר השנים שאנחנו מחפשים
-          console.log(`מצאנו מסמך לפי מטרה ${purpose} שמכיל נתונים לתקופה של ${years} שנים`);
+          //console.log(`מצאנו מסמך לפי מטרה ${purpose} שמכיל נתונים לתקופה של ${years} שנים`);
           
           // נחפש את הריבית הקרובה ביותר
           let closestInterest = null;
@@ -92,7 +97,7 @@ scheduleSchema.statics.findMatchingSchedule = async function(purpose, years, int
             }
             
             if (closestInterest !== null) {
-              console.log(`נמצאה ריבית ${closestInterest}% במקום ${interest}%`);
+              //console.log(`נמצאה ריבית ${closestInterest}% במקום ${interest}%`);
               
               // בנה אובייקט חדש עם המידע המתאים
               schedule = {
@@ -106,7 +111,7 @@ scheduleSchema.statics.findMatchingSchedule = async function(purpose, years, int
           }
         }
       } catch (nestedError) {
-        console.error('שגיאה בחיפוש מורכב:', nestedError);
+        console.error('Error in complex schedule search:', nestedError);
       }
       
       if (!schedule) {
@@ -117,18 +122,21 @@ scheduleSchema.statics.findMatchingSchedule = async function(purpose, years, int
         }).sort({ interest: 'asc' });
         
         if (schedule) {
-          console.log(`לא נמצא לוח מדויק. משתמש בלוח עם ריבית ${schedule.interest}% במקום ${interest}%`);
+          //console.log(`No exact schedule. Using schedule with interest ${schedule.interest}% instead of ${interest}%`);
         }
       }
     }
 
     if (!schedule) {
-      console.log(`לא נמצא לוח שפיצר מתאים למטרה=${purpose}, שנים=${years}, ריבית=${interest}%`);
+      //console.log(`No matching Spitzer schedule found for purpose=${purpose}, years=${years}, interest=${interest}%`);
     }
 
+    if (schedule) {
+      scheduleCache[cacheKey] = schedule;
+    }
     return schedule;
   } catch (error) {
-    console.error('שגיאה בחיפוש לוח שפיצר:', error);
+    console.error('Error searching for Spitzer schedule:', error);
     throw error;
   }
 };
@@ -137,7 +145,7 @@ scheduleSchema.statics.findMatchingSchedule = async function(purpose, years, int
 scheduleSchema.methods.adjustToLoanAmount = function(newLoanAmount) {
   // אם אין לוח תשלומים או שהוא ריק, נחזיר מערך ריק
   if (!this.monthlyPayments || !Array.isArray(this.monthlyPayments) || this.monthlyPayments.length === 0) {
-    console.log('אין לוח תשלומים זמין להתאמה');
+    //console.log('אין לוח תשלומים זמין להתאמה');
     return [];
   }
 
@@ -147,13 +155,13 @@ scheduleSchema.methods.adjustToLoanAmount = function(newLoanAmount) {
 
   // מקדם ההתאמה
   const factor = newLoanAmount / this.loanAmount;
-  console.log(`מתאים לוח תשלומים: סכום מקורי=${this.loanAmount}₪, סכום חדש=${newLoanAmount}₪, מקדם=${factor}`);
+  //console.log(`מתאים לוח תשלומים: סכום מקורי=${this.loanAmount}₪, סכום חדש=${newLoanAmount}₪, מקדם=${factor}`);
   
   // יצירת לוח חדש עם הערכים המותאמים
   const adjustedPayments = this.monthlyPayments.map(payment => {
     // בדיקה שיש לנו את כל השדות הנדרשים
     if (!payment.month || !payment.totalPayment || !payment.principal || !payment.interest || !payment.remainingPrincipal) {
-      console.log('מבנה תשלום חסר שדות:', payment);
+      //console.log('מבנה תשלום חסר שדות:', payment);
       // ניצור אובייקט עם ערכי ברירת מחדל אם חסרים שדות
       return {
         month: payment.month || 0,
@@ -180,7 +188,7 @@ scheduleSchema.methods.adjustToLoanAmount = function(newLoanAmount) {
 // מתודה לחישוב ערכים ממוצעים מלוח התשלומים
 scheduleSchema.methods.calculateAverages = function(adjustedPayments) {
   if (!adjustedPayments || !Array.isArray(adjustedPayments) || adjustedPayments.length === 0) {
-    console.log('אין תשלומים חודשיים לחישוב ממוצעים');
+    //console.log('אין תשלומים חודשיים לחישוב ממוצעים');
     return { avgTotalPayment: 0, avgPrincipal: 0, avgInterest: 0 };
   }
 
@@ -192,7 +200,7 @@ scheduleSchema.methods.calculateAverages = function(adjustedPayments) {
   );
 
   if (validPayments.length === 0) {
-    console.log('אין תשלומים חודשיים תקינים לחישוב ממוצעים');
+    //console.log('אין תשלומים חודשיים תקינים לחישוב ממוצעים');
     return { avgTotalPayment: 0, avgPrincipal: 0, avgInterest: 0 };
   }
 
@@ -207,7 +215,7 @@ scheduleSchema.methods.calculateAverages = function(adjustedPayments) {
   const avgPrincipal = Math.round(sum.principal / validPayments.length);
   const avgInterest = Math.round(sum.interest / validPayments.length);
 
-  console.log(`ממוצעים מחושבים: תשלום חודשי=${avgTotalPayment}₪, קרן=${avgPrincipal}₪, ריבית=${avgInterest}₪`);
+  //console.log(`ממוצעים מחושבים: תשלום חודשי=${avgTotalPayment}₪, קרן=${avgPrincipal}₪, ריבית=${avgInterest}₪`);
 
   return {
     avgTotalPayment,

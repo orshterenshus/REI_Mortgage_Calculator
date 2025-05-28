@@ -49,26 +49,26 @@ router.get('/db-status', (req, res) => {
   let status;
   switch (dbState) {
     case 0:
-      status = 'מנותק';
+      status = 'disconnected';
       break;
     case 1:
-      status = 'מחובר';
+      status = 'connected';
       break;
     case 2:
-      status = 'מתחבר';
+      status = 'connecting';
       break;
     case 3:
-      status = 'מתנתק';
+      status = 'disconnecting';
       break;
     default:
-      status = 'לא ידוע';
+      status = 'unknown';
   }
   
   res.json({
     readyState: dbState,
     status,
-    connectedTo: mongoose.connection.host || 'אין חיבור',
-    dbName: mongoose.connection.name || 'אין חיבור'
+    connectedTo: mongoose.connection.host || 'no connection',
+    dbName: mongoose.connection.name || 'no connection'
   });
 });
 

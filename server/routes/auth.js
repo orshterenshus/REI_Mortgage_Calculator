@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const auth = require('../middleware/auth');
 require('dotenv').config();
 
 // Register
@@ -72,6 +73,28 @@ router.post('/reset-password', [
 ], async (req, res) => {
   // For now, just return success (token logic to be implemented)
   res.json({ message: 'Password reset logic to be implemented.' });
+});
+
+// Get user by email (for admins only)
+router.get('/users/:email', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'אין הרשאה' });
+    }
+    
+    const email = decodeURIComponent(req.params.email);
+    const user = await User.findOne({ email }).select('-passwordHash');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'משתמש לא נמצא' });
+    }
+    
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ success: false, error: 'שגיאה בטעינת פרטי המשתמש' });
+  }
 });
 
 module.exports = router; 

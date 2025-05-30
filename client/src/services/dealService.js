@@ -34,28 +34,41 @@ export const getDealById = async (id) => {
  * @param {Object} formInputs - The form inputs
  * @returns {Promise<Object>} The created deal
  */
-export const createDeal = async (formInputs) => {
+export const createDeal = async (inputs) => {
   try {
-    // If formInputs already contains all required fields, use them directly
-    // Otherwise, create a proper deal object from formInputs
-    const dealData = formInputs.name ? formInputs : {
-      name: `חישוב ${new Date().toLocaleDateString('he-IL')}`,
-      propertyValue: formInputs.propertyValue || 0,
-      purchaseTaxRate: formInputs.purchaseExpenseRate || 0,
-      lawyerFee: 0,
-      otherExpenses: formInputs.renovationCost || 0,
-      equity: formInputs.equity || 0,
-      annualInterestRate: formInputs.annualInterestRate || 4.0,
-      loanTerm: formInputs.years || 0,
-      monthlyRent: formInputs.monthlyRent || 0,
-      annualExpensesRate: formInputs.expenseRate || 0,
-      annualAppreciationRate: formInputs.annualAppreciationRate || 0
-    };
+    // First check if we have a token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No authentication token found');
+      throw new Error('לא נמצא טוקן אימות - יש להתחבר מחדש');
+    }
     
-    const response = await api.post('/deals', dealData);
+    const response = await api.post('/deals', {
+      name: `Deal ${new Date().toISOString()}`,
+      propertyValue: inputs.propertyValue,
+      purchaseTaxRate: inputs.purchaseExpenseRate || 0,
+      lawyerFee: 0,
+      otherExpenses: inputs.renovationCost || 0,
+      equity: inputs.equity,
+      annualInterestRate: inputs.annualInterestRate || 4,
+      loanTerm: inputs.years,
+      monthlyRent: inputs.monthlyRent,
+      annualExpensesRate: inputs.expenseRate || 0,
+      annualAppreciationRate: inputs.annualAppreciationRate || 0
+    });
     return response.data;
   } catch (error) {
     console.error('Error creating deal:', error);
+    
+    // Check for authentication error
+    if (error.response && error.response.status === 401) {
+      console.error('Authentication failed - token may be expired');
+      // Optionally clear invalid token
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.reload(); // Force reload to show login
+    }
+    
     throw error;
   }
 };

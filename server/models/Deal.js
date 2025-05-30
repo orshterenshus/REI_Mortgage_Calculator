@@ -17,10 +17,8 @@ try {
 
 // הגדרת סכמה חדשה וברורה
 const dealSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  email: { type: String, required: true },
   name: {
     type: String,
     required: [true, 'Please provide a name for this deal'],
@@ -105,7 +103,7 @@ dealSchema.pre(/^find/, function() {
 // חשוב! שימוש בשם מדויק - רק עם הקולקציה deals
 // args: (modelName, schema, collectionName)
 // השם השלישי חשוב ביותר! הוא קובע את שם הקולקציה!
-const DealModel = mongoose.model('dealModel', dealSchema, 'deals');
+const DealModel = mongoose.model('Deal', dealSchema, 'deals');
 
 // גישה ישירה לקולקציית deals
 Object.defineProperty(DealModel, 'collection', {

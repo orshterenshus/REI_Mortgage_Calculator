@@ -18,56 +18,43 @@ export const calculateMonthlyPayment = async (loanAmount, annualInterestRate, ye
   if (!loanAmount || !years) return 0;
 
   try {
-    // נסה קודם כל להביא את totalPayment מה-DB (shpizer)
     console.log(`🔄 מנסה לקבל totalPayment מלוח shpizer עבור ${years} שנים`);
-    const response = await api.get('/shpizer', {
+    
+    // Use the correct API endpoint
+    const response = await api.get('/schedules/adjustedSchedule', {
       params: {
-        years,
-        interest: annualInterestRate,
-        purpose: 'דיור'
+        purpose: 'דיור',
+        years: years,
+        loanAmount: loanAmount,
+        interest: annualInterestRate
       }
     });
-    if (response.data && response.data.success && response.data.schedule) {
-      const totalPayment = response.data.schedule.totalPayment || (response.data.schedule.monthlyPayments && response.data.schedule.monthlyPayments[0]?.totalPayment);
-      if (totalPayment) {
-        const multiplier = loanAmount / 100000;
-        const payment = Math.round(totalPayment * multiplier);
-        console.log(`✅ תשלום חודשי מחושב מה-DB: ${payment}₪ (${totalPayment} × ${multiplier})`);
-        return payment;
-      }
+    
+    if (response.data && response.data.monthlyPayment) {
+      console.log(`✅ התקבל totalPayment מה-DB: ${response.data.monthlyPayment}`);
+      return response.data.monthlyPayment;
     }
-    // fallback if no totalPayment found
-    console.log('❌ לא נמצא totalPayment ב-db, עובר לחישוב רגיל');
-  } catch (error) {
-    console.error('שגיאה בקבלת totalPayment מה-DB:', error);
+    
+    throw new Error('No monthly payment data received');
+  } catch (dbError) {
+    console.log('שגיאה בקבלת totalPayment מה-DB:', dbError);
+    console.log('מחשב לפי נוסחה רגילה...');
+    
+    // Fallback to formula calculation
+    const monthlyInterestRate = annualInterestRate / 100 / 12;
+    const numberOfPayments = years * 12;
+    
+    if (monthlyInterestRate === 0) {
+      return loanAmount / numberOfPayments;
+    }
+    
+    const monthlyPayment = loanAmount * 
+      (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments)) /
+      (Math.pow(1 + monthlyInterestRate, numberOfPayments) - 1);
+    
+    console.log(`💡 חישוב לפי נוסחה: ${Math.round(monthlyPayment)}`);
+    return Math.round(monthlyPayment);
   }
-
-  // גיבוי - במקרה של שגיאה נחזור לערכים הקבועים
-  const PAYMENT_RATES = {
-    10: 1012, // 10 years: 1012 ש"ח
-    15: 750,  // 15 years: 750 ש"ח
-    20: 627,  // 20 years: 627 ש"ח
-    25: 562,  // 25 years: 562 ש"ח
-    30: 525   // 30 years: 525 ש"ח
-  };
-
-  // קבלת התקופה הקרובה ביותר
-  let termYears;
-  if (years <= 10) termYears = 10;
-  else if (years > 10 && years <= 15) termYears = 15;
-  else if (years > 15 && years <= 20) termYears = 20;
-  else if (years > 20 && years <= 25) termYears = 25;
-  else termYears = 30;
-
-  // קבלת הערך לתקופה
-  const rate = PAYMENT_RATES[termYears];
-
-  // חישוב תשלום חודשי
-  const multiplier = loanAmount / 100000;
-  const payment = Math.round(rate * multiplier);
-
-  console.log(`משתמש בחישוב גיבוי לתשלום חודשי: ${payment}₪ (${rate} × ${multiplier})`);
-  return payment;
 };
 
 // Calculate annual mortgage payment - חישוב תשלום משכנתא שנתי

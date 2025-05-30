@@ -31,6 +31,11 @@ import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import { BrowserRouter, useLocation } from 'react-router-dom';
+import MyPortfolio from './components/MyPortfolio';
+import ClientPortfolios from './components/ClientPortfolios';
+import DealComparison from './components/DealComparison';
+import DealViewer from './components/DealViewer';
+import ClientPortfolioView from './components/ClientPortfolioView';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -98,29 +103,21 @@ const NavLinks = styled.div`
 `;
 
 const NavLink = styled.a`
-  color: var(--text-dark);
+  color: var(--text);
   text-decoration: none;
   font-weight: 500;
-  padding: 0.5rem 0;
-  position: relative;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
   
   &:hover {
-    color: var(--primary);
+    background-color: rgba(0, 0, 0, 0.05);
   }
   
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 0;
-    height: 2px;
+  &.active {
     background-color: var(--primary);
-    transition: width 0.3s ease;
-  }
-  
-  &:hover:after {
-    width: 100%;
+    color: white;
   }
 `;
 
@@ -134,6 +131,7 @@ const LogoutButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-right: 1rem;
   
   &:hover {
     background-color: var(--primary-dark);
@@ -269,18 +267,67 @@ const AppInner = () => {
   const [showRegister, setShowRegister] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [activeTab, setActiveTab] = useState('calculator');
+  const [comparisonDealIds, setComparisonDealIds] = useState(null);
+  const [viewedDeal, setViewedDeal] = useState(null);
+  const [viewedClientEmail, setViewedClientEmail] = useState(null);
   const location = useLocation();
 
   const handleLogin = (user, token) => {
     setUser(user);
     setToken(token);
+    // Set initial tab based on user role
+    if (user.role === 'admin') {
+      setActiveTab('clients');
+    } else {
+      // For regular users, check if they have deals
+      checkUserDealsAndSetTab();
+    }
   };
+
+  const checkUserDealsAndSetTab = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/deals/my-deals', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.deals && data.deals.length > 0) {
+          // User has existing deals - show portfolio
+          setActiveTab('portfolio');
+        } else {
+          // User has no deals - show calculator
+          setActiveTab('calculator');
+        }
+      } else {
+        // Default to calculator if can't check
+        setActiveTab('calculator');
+      }
+    } catch (error) {
+      console.error('Error checking user deals:', error);
+      setActiveTab('calculator');
+    }
+  };
+
+  // Set initial tab when user data is loaded from localStorage
+  useEffect(() => {
+    if (user && token) {
+      if (user.role === 'admin') {
+        setActiveTab('clients');
+      } else {
+        checkUserDealsAndSetTab();
+      }
+    }
+  }, [user, token]);
 
   const handleLogout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    setActiveTab('calculator'); // Reset to default tab
   };
 
   // Check DB connection status
@@ -369,28 +416,6 @@ const AppInner = () => {
       setIsCalculating(true);
       
       console.log("=== Starting new calculation ===");
-      
-      // First, save current inputs to database if connected
-      if (dbConnectionStatus) {
-        try {
-          // First check if we need to create a new deal or update existing one
-          let dealId = currentDealId;
-          
-          if (!dealId) {
-            // Create a new deal with current inputs
-            const newDeal = await createDeal(inputs);
-            dealId = newDeal._id;
-            setCurrentDealId(dealId);
-            console.log('Created new deal with ID:', dealId);
-          } else {
-            // Update existing deal with current inputs
-            await updateDealInputs(dealId, inputs);
-            console.log('Updated existing deal with ID:', dealId);
-          }
-        } catch (error) {
-          console.error('Error syncing inputs with database before calculation:', error);
-        }
-      }
       
       // Make a copy of inputs and ensure fixed values are set
       const calculationInputs = {
@@ -567,54 +592,86 @@ const AppInner = () => {
       
       console.log("Final calculated results:", calculatedResults);
 
+      // Save results to state
       setResults(calculatedResults);
       setForecast(forecastData);
 
-      // Save to localStorage for backup
-      saveData({
-        inputs: calculationInputs,
-        results: calculatedResults,
-        forecast: forecastData,
-      });
-
-      // Save results to current deal in DB if connected
-      if (dbConnectionStatus && currentDealId) {
+      // Automatically save to database after calculation
+      if (dbConnectionStatus && token) {
+        console.log('Attempting to auto-save calculation to DB...');
+        console.log('DB connected:', dbConnectionStatus);
+        console.log('Token exists:', !!token);
+        
         try {
-          // Update the current deal with results and forecast
-          await api.put(`/deals/${currentDealId}`, {
+          const dealData = {
+            inputs: calculationInputs,
             results: calculatedResults,
-            forecast: forecastData
+            forecast: forecastData,
+            savedAt: new Date()
+          };
+
+          console.log('Sending deal data to server:', dealData);
+
+          const response = await fetch('http://localhost:5000/api/deals', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(dealData)
+          });
+
+          console.log('Response status:', response.status);
+          const data = await response.json();
+          console.log('Response data:', data);
+          
+          if (data.success) {
+            setCurrentDealId(data.deal._id);
+            setNotification({
+              message: 'החישוב נשמר בהצלחה',
+              success: true
+            });
+            
+            // For regular users, switch to portfolio after first save
+            if (user && user.role !== 'admin') {
+              setActiveTab('portfolio');
+            }
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+              setNotification(null);
+            }, 3000);
+          } else {
+            console.error('Save failed:', data.error);
+            setNotification({
+              message: data.error || 'שגיאה בשמירת החישוב',
+              success: false
+            });
+            
+            // Hide error notification after 5 seconds
+            setTimeout(() => {
+              setNotification(null);
+            }, 5000);
+          }
+        } catch (error) {
+          console.error('Error auto-saving calculation:', error);
+          setNotification({
+            message: 'שגיאה בשמירת החישוב',
+            success: false
           });
           
-          console.log('Results saved to DB successfully');
-        } catch (error) {
-          console.error('Error saving results to DB:', error);
+          // Hide error notification after 5 seconds
+          setTimeout(() => {
+            setNotification(null);
+          }, 5000);
         }
       } else {
-        // Fallback to file/local save if DB not connected
-        const saveResult = await saveCalculation({
-          inputs: {
-            ...inputs,
-            mortgageYears: inputs.years,
-            annualInterestRate: FIXED_ANNUAL_INTEREST_RATE
-          },
-          results: calculatedResults,
-          forecast: forecastData
-        });
-        
-        if (saveResult && saveResult.success) {
-          console.log(`Results saved to file: ${saveResult.filename}`);
-        }
+        console.log('Not saving - DB connected:', dbConnectionStatus, 'Token:', !!token);
       }
-      
+
       setIsCalculating(false);
       console.log("=== Calculation completed ===");
       
-      // Hide notification after 5 seconds
-      setTimeout(() => {
-        setNotification(null);
-      }, 5000);
-
     } catch (error) {
       console.error('Error during calculation:', error);
       
@@ -695,89 +752,55 @@ const AppInner = () => {
   };
 
   const handleSave = async () => {
+    if (!results) {
+      setNotification({
+        message: 'אין תוצאות לשמירה. יש לבצע חישוב תחילה.',
+        success: false
+      });
+      return;
+    }
+
     try {
-      if (!results) {
+      // Prepare the data structure according to your schema
+      const dealData = {
+        inputs: inputs,
+        results: results,
+        forecast: forecast,
+        savedAt: new Date()
+      };
+
+      const response = await fetch('http://localhost:5000/api/deals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Add authorization header
+        },
+        body: JSON.stringify(dealData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCurrentDealId(data.deal._id);
         setNotification({
-          message: 'יש לבצע חישוב לפני שמירה',
-          success: false
-        });
-        
-        setTimeout(() => {
-          setNotification(null);
-        }, 3000);
-        
-        return;
-      }
-      
-      if (dbConnectionStatus) {
-        // בצע שמירה בדרך הדאטהבייס
-        const dealData = {
-          name: `חישוב ${new Date().toLocaleDateString('he-IL')}`,
-          propertyValue: inputs.propertyValue,
-          purchaseTaxRate: inputs.purchaseExpenseRate,
-          lawyerFee: 0,
-          otherExpenses: inputs.renovationCost,
-          equity: inputs.equity,
-          annualInterestRate: inputs.annualInterestRate,
-          loanTerm: inputs.years,
-          monthlyRent: inputs.monthlyRent,
-          annualExpensesRate: inputs.expenseRate,
-          annualAppreciationRate: inputs.annualAppreciationRate,
-          results: results,
-          forecast: forecast
-        };
-        
-        // Create a new deal instead of updating the current one to keep history
-        const newDeal = await createDeal(dealData);
-        setCurrentDealId(newDeal._id);
-        
-        setNotification({
-          message: 'החישוב נשמר בהצלחה במסד הנתונים',
+          message: 'העסקה נשמרה בהצלחה',
           success: true
         });
       } else {
-        // Fallback to localStorage if DB not connected
-        saveData({
-          inputs,
-          results,
-          forecast,
-        });
-        
-        // Also save to JSON file
-        const saveResult = await saveCalculation({
-          inputs,
-          results,
-          forecast
-        });
-        
-        if (saveResult && saveResult.success) {
-          setNotification({
-            message: `החישוב נשמר בהצלחה ל-localStorage ולקובץ: ${saveResult.filename}`,
-            success: true
-          });
-        } else {
-          setNotification({
-            message: 'החישוב נשמר ל-localStorage בלבד',
-            success: true
-          });
-        }
+        throw new Error(data.error || 'שגיאה בשמירה');
       }
-      
-      setTimeout(() => {
-        setNotification(null);
-      }, 3000);
     } catch (error) {
-      console.error('שגיאה בשמירת החישוב:', error);
-      
+      console.error('Error saving deal:', error);
       setNotification({
-        message: 'שגיאה בשמירת החישוב',
+        message: 'שגיאה בשמירת העסקה',
         success: false
       });
-      
-      setTimeout(() => {
-        setNotification(null);
-      }, 3000);
     }
+
+    // Hide notification after 3 seconds
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000);
   };
   
   const handleClear = () => {
@@ -802,6 +825,42 @@ const AppInner = () => {
     }, 3000);
   };
 
+  const handleOpenDeal = async (deal) => {
+    // Instead of loading into calculator, switch to viewer mode
+    setViewedDeal(deal);
+    setActiveTab('viewer');
+  };
+
+  const handleCompareDeals = (dealIds) => {
+    setComparisonDealIds(dealIds);
+    setActiveTab('comparison');
+  };
+
+  const handleBackFromComparison = () => {
+    setComparisonDealIds(null);
+    setActiveTab('portfolio');
+  };
+
+  const handleBackFromViewer = () => {
+    setViewedDeal(null);
+    setActiveTab('portfolio');
+  };
+
+  const handleBackFromViewerToClientPortfolio = () => {
+    setViewedDeal(null);
+    setActiveTab('clientPortfolio');
+  };
+
+  const handleViewClientPortfolio = (clientEmail) => {
+    setViewedClientEmail(clientEmail);
+    setActiveTab('clientPortfolio');
+  };
+
+  const handleBackFromClientPortfolio = () => {
+    setViewedClientEmail(null);
+    setActiveTab('clients');
+  };
+
   // Determine if user is authenticated
   const isAuthenticated = user && token;
 
@@ -823,49 +882,109 @@ const AppInner = () => {
       
       <MainNavbar>
         <NavContent>
-          <div>מחשבון השקעות</div>
-          
           <NavLinks>
-            <NavLink href="#">חישוב חדש</NavLink>
-            <NavLink href="#">הסבר מושגים</NavLink>
-            <NavLink href="#">עזרה</NavLink>
+            <NavLink 
+              className={activeTab === 'calculator' ? 'active' : ''} 
+              onClick={() => setActiveTab('calculator')}
+            >
+              חישוב חדש
+            </NavLink>
+            {user && user.role !== 'admin' && (
+              <NavLink 
+                className={activeTab === 'portfolio' ? 'active' : ''} 
+                onClick={() => setActiveTab('portfolio')}
+              >
+                התיק שלי
+              </NavLink>
+            )}
+            {user && user.role === 'admin' && (
+              <NavLink 
+                className={activeTab === 'clients' ? 'active' : ''} 
+                onClick={() => setActiveTab('clients')}
+              >
+                תיקי לקוחות
+              </NavLink>
+            )}
+          </NavLinks>
+          <div>
             {user && <UserInfo>שלום, {user.firstName || user.username}</UserInfo>}
             <LogoutButton onClick={handleLogout}>התנתק</LogoutButton>
-          </NavLinks>
+          </div>
         </NavContent>
       </MainNavbar>
       
       <MainContent>
-        <div className="container">
-          {notification && (
-            <NotificationBanner success={notification.success}>
-              {notification.message}
-            </NotificationBanner>
-          )}
-          
-          <InputForm
-            inputs={inputs}
-            setInputs={handleInputChange}
-            onCalculate={calculateResults}
-            onSave={handleSave}
-            onClear={handleClear}
-            isCalculating={isCalculating}
+        {activeTab === 'calculator' && (
+          <div className="container">
+            {notification && (
+              <NotificationBanner success={notification.success}>
+                {notification.message}
+              </NotificationBanner>
+            )}
+            
+            <InputForm
+              inputs={inputs}
+              setInputs={handleInputChange}
+              onCalculate={calculateResults}
+              onSave={handleSave}
+              onClear={handleClear}
+              isCalculating={isCalculating}
+            />
+            
+            {results && (
+              <>
+                <ResultsSummary results={results} inputs={inputs} years={inputs.years} />
+                
+                <div className="charts-grid">
+                  <PropertyValueChart forecast={forecast} />
+                  <CashflowChart forecast={forecast} />
+                  <ProfitChart forecast={forecast} results={results} />
+                </div>
+                
+                <ForecastTable forecast={forecast} years={inputs.years} />
+              </>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'portfolio' && (
+          <MyPortfolio 
+            onOpenDeal={handleOpenDeal}
+            onCompareDeals={handleCompareDeals}
           />
-          
-          {results && (
-            <>
-              <ResultsSummary results={results} inputs={inputs} years={inputs.years} />
-              
-              <div className="charts-grid">
-                <PropertyValueChart forecast={forecast} />
-                <CashflowChart forecast={forecast} />
-                <ProfitChart forecast={forecast} results={results} />
-              </div>
-              
-              <ForecastTable forecast={forecast} years={inputs.years} />
-            </>
-          )}
-        </div>
+        )}
+        
+        {activeTab === 'clients' && user.role === 'admin' && (
+          <ClientPortfolios 
+            onOpenDeal={handleOpenDeal}
+            onViewClientPortfolio={handleViewClientPortfolio}
+          />
+        )}
+        
+        {activeTab === 'clientPortfolio' && viewedClientEmail && (
+          <ClientPortfolioView 
+            clientEmail={viewedClientEmail}
+            onOpenDeal={handleOpenDeal}
+            onBack={handleBackFromClientPortfolio}
+          />
+        )}
+        
+        {activeTab === 'comparison' && comparisonDealIds && (
+          <DealComparison 
+            dealIds={comparisonDealIds}
+            onBack={handleBackFromComparison}
+          />
+        )}
+        
+        {activeTab === 'viewer' && viewedDeal && (
+          <DealViewer 
+            deal={viewedDeal}
+            onBack={viewedClientEmail ? handleBackFromClientPortfolio : handleBackFromViewer}
+            onBackToPortfolio={viewedClientEmail ? handleBackFromViewerToClientPortfolio : null}
+            userRole={user?.role}
+            clientEmail={viewedClientEmail}
+          />
+        )}
       </MainContent>
       
       <Footer>

@@ -2,47 +2,172 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Deal = require('../models/Deal');
+const auth = require('../middleware/auth');
+const User = require('../models/User');
 
-// שמירת חישוב חדש
-router.post('/', async (req, res) => {
+// Get user's own deals (for regular users)
+router.get('/my-deals', auth, async (req, res) => {
   try {
-    const deal = new Deal(req.body);
-    const savedDeal = await deal.save();
-    res.status(201).json(savedDeal);
+    const deals = await Deal.find({ email: req.user.email })
+      .sort({ createdAt: -1 }) // Sort by newest first (using createdAt instead of savedAt)
+      .limit(50);
+    res.json({ success: true, deals });
   } catch (error) {
-    console.error('Error saving deal:', error);
-    res.status(400).json({ message: error.message });
+    console.error('Error fetching user deals:', error);
+    res.status(500).json({ success: false, error: 'שגיאה בטעינת העסקאות' });
   }
 });
 
-// קבלת כל החישובים עם אפשרות להגביל את מספר התוצאות
-router.get('/', async (req, res) => {
+// Get deals for a specific client (for admins only)
+router.get('/client/:email', auth, async (req, res) => {
   try {
-    const { limit } = req.query;
-    let query = Deal.find().sort({ createdAt: -1 });
-    
-    // אם הועבר פרמטר limit, הגבל את מספר התוצאות
-    if (limit && !isNaN(parseInt(limit))) {
-      query = query.limit(parseInt(limit));
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'אין הרשאה' });
     }
     
-    const deals = await query;
-    res.status(200).json(deals);
+    const clientEmail = decodeURIComponent(req.params.email);
+    const deals = await Deal.find({ email: clientEmail })
+      .sort({ createdAt: -1 })
+      .limit(50);
+    
+    res.json({ success: true, deals });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching client deals:', error);
+    res.status(500).json({ success: false, error: 'שגיאה בטעינת עסקאות הלקוח' });
+  }
+});
+
+// Get all clients and their deals (for admins only)
+router.get('/client-portfolios', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'אין הרשאה' });
+    }
+    
+    // Get all deals grouped by user email
+    const dealsGrouped = await Deal.aggregate([
+      {
+        $group: {
+          _id: '$email',
+          dealCount: { $sum: 1 },
+          lastDealDate: { $max: '$createdAt' },
+          deals: { $push: '$$ROOT' }
+        }
+      }
+    ]);
+    
+    // Get user information for each email and combine with deal data
+    const clientsWithUserInfo = await Promise.all(
+      dealsGrouped.map(async (client) => {
+        const user = await User.findOne({ email: client._id });
+        return {
+          _id: client._id,
+          firstName: user ? user.firstName : '',
+          lastName: user ? user.lastName : '',
+          dealCount: client.dealCount,
+          lastDealDate: client.lastDealDate,
+          deals: client.deals
+        };
+      })
+    );
+    
+    // Sort by last name and first name
+    clientsWithUserInfo.sort((a, b) => {
+      const aName = `${a.lastName} ${a.firstName}`.toLowerCase();
+      const bName = `${b.lastName} ${b.firstName}`.toLowerCase();
+      return aName.localeCompare(bName);
+    });
+    
+    res.json({ success: true, clients: clientsWithUserInfo });
+  } catch (error) {
+    console.error('Error fetching client portfolios:', error);
+    res.status(500).json({ success: false, error: 'שגיאה בטעינת תיקי הלקוחות' });
+  }
+});
+
+// שמירת חישוב חדש
+router.post('/', auth, async (req, res) => {
+  try {
+    console.log('POST /api/deals - Starting save process');
+    
+    // Get user from auth middleware
+    const userId = req.user ? req.user.id : null;
+    const userEmail = req.user ? req.user.email : null;
+    
+    console.log('User info:', { userId, userEmail });
+    console.log('Request body keys:', Object.keys(req.body));
+    
+    // Validate required fields
+    if (!req.body.inputs || !req.body.results) {
+      console.log('Missing required fields - inputs or results');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'חסרים נתונים הכרחיים' 
+      });
+    }
+
+    // Map the data from client structure to Deal model structure
+    const { inputs, results, forecast } = req.body;
+    
+    console.log('Inputs received:', inputs);
+    
+    const dealData = {
+      userId,
+      email: userEmail,
+      name: `חישוב ${new Date().toLocaleDateString('he-IL')}`,
+      propertyValue: inputs.propertyValue || 0,
+      purchaseTaxRate: inputs.purchaseExpenseRate || 0,
+      lawyerFee: 0, // Not in current UI
+      otherExpenses: inputs.renovationCost || 0,
+      equity: inputs.equity || 0,
+      annualInterestRate: inputs.annualInterestRate || 4.0,
+      loanTerm: inputs.years || 0,
+      monthlyRent: inputs.monthlyRent || 0,
+      annualExpensesRate: inputs.expenseRate || 0,
+      annualAppreciationRate: inputs.annualAppreciationRate || 0,
+      results: results || {},
+      forecast: forecast || [],
+      createdAt: new Date()
+    };
+    
+    console.log('Deal data prepared:', dealData);
+    
+    const deal = new Deal(dealData);
+    const savedDeal = await deal.save();
+    
+    console.log('Deal saved successfully with ID:', savedDeal._id);
+    
+    res.json({ 
+      success: true, 
+      deal: savedDeal,
+      message: 'העסקה נשמרה בהצלחה'
+    });
+  } catch (error) {
+    console.error('Error saving deal - Full error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ success: false, error: 'שגיאה בשמירת העסקה' });
   }
 });
 
 // קבלת חישוב ספציפי לפי ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const deal = await Deal.findById(req.params.id);
     if (!deal) {
       return res.status(404).json({ message: 'Deal not found' });
     }
+    
+    // Check if user has permission to view this deal
+    if (req.user.role !== 'admin' && deal.email !== req.user.email) {
+      return res.status(403).json({ success: false, error: 'אין הרשאה לצפות בעסקה זו' });
+    }
+    
     res.status(200).json(deal);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching deal:', error);
+    res.status(500).json({ success: false, error: 'שגיאה בטעינת העסקה' });
   }
 });
 

@@ -24,28 +24,15 @@ const users = [
 ];
 
 async function createAdmins() {
-  await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/apartment-calculator', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  });
+  const uri = process.env.MONGO_URI || 'mongodb+srv://or803803:Aa123456@mortgageapp.y0bkyzu.mongodb.net/mortgageApp';
+  console.log("Connecting to DB using URI (or fallback):", uri);
+  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
   for (const userData of users) {
-    const existing = await User.findOne({ username: userData.username });
-    if (existing) {
-      console.log(`User ${userData.username} already exists.`);
-      continue;
-    }
     const passwordHash = await bcrypt.hash(userData.password, 10);
-    const user = new User({
-      username: userData.username,
-      passwordHash,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      role: userData.role
-    });
-    await user.save();
-    console.log(`Created admin user: ${user.username}`);
+    const userPlain = { username: userData.username, passwordHash, firstName: userData.firstName, lastName: userData.lastName, email: userData.email, role: userData.role };
+    const result = await User.findOneAndUpdate({ username: userData.username }, userPlain, { upsert: true, new: true });
+    console.log(`User ${userData.username} (${result._id}) upserted (inserted or updated).`);
   }
   await mongoose.disconnect();
   console.log('Done.');

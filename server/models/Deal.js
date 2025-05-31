@@ -19,9 +19,13 @@ try {
 const dealSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   email: { type: String, required: true },
+  address: {
+    type: String,
+    required: [true, 'Please provide a property address'],
+    trim: true
+  },
   name: {
     type: String,
-    required: [true, 'Please provide a name for this deal'],
     trim: true
   },
   propertyValue: {

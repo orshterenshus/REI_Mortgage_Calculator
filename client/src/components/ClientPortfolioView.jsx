@@ -145,15 +145,13 @@ const ClientPortfolioView = ({ clientEmail, onOpenDeal, onBack }) => {
         if (userResponse.data.success) {
           setClientInfo({
             email: clientEmail,
-            firstName: userResponse.data.user.firstName || '',
-            lastName: userResponse.data.user.lastName || ''
+            fullName: userResponse.data.user.fullName || ''
           });
         } else {
           // Fallback - use email as display name
           setClientInfo({
             email: clientEmail,
-            firstName: '',
-            lastName: ''
+            fullName: ''
           });
         }
       }
@@ -164,8 +162,7 @@ const ClientPortfolioView = ({ clientEmail, onOpenDeal, onBack }) => {
       // Set basic client info even if there's an error
       setClientInfo({
         email: clientEmail,
-        firstName: '',
-        lastName: ''
+        fullName: ''
       });
     } finally {
       setLoading(false);
@@ -190,7 +187,7 @@ const ClientPortfolioView = ({ clientEmail, onOpenDeal, onBack }) => {
   if (loading) return <LoadingMessage>טוען עסקאות הלקוח...</LoadingMessage>;
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
 
-  const clientName = clientInfo ? `${clientInfo.firstName} ${clientInfo.lastName}`.trim() : clientEmail;
+  const clientName = clientInfo ? (clientInfo.fullName || clientEmail).trim() : clientEmail;
 
   return (
     <PortfolioContainer>
@@ -207,7 +204,7 @@ const ClientPortfolioView = ({ clientEmail, onOpenDeal, onBack }) => {
             <DealCard key={deal._id} onClick={() => onOpenDeal(deal)}>
               <DealHeader>
                 <DealName>
-                  {deal.name || `עסקה מ-${format(new Date(deal.createdAt), 'dd/MM/yyyy', { locale: he })}`}
+                  {deal.address || deal.name || `עסקה מ-${format(new Date(deal.createdAt), 'dd/MM/yyyy', { locale: he })}`}
                 </DealName>
                 <DealDate>
                   {format(new Date(deal.createdAt), 'dd/MM/yyyy HH:mm', { locale: he })}

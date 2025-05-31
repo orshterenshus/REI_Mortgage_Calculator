@@ -195,7 +195,7 @@ const ClientPortfolios = ({ onOpenDeal, onViewClientPortfolio }) => {
     }
 
     const filtered = clients.filter(client => {
-      const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+      const fullName = (client.fullName || '').toLowerCase();
       const email = client._id.toLowerCase();
       const term = searchTerm.toLowerCase();
       
@@ -254,9 +254,7 @@ const ClientPortfolios = ({ onOpenDeal, onViewClientPortfolio }) => {
           <ClientCard key={client._id} onClick={() => onViewClientPortfolio && onViewClientPortfolio(client._id)}>
             <ClientHeader>
               <ClientName>
-                {client.firstName && client.lastName 
-                  ? `${client.firstName} ${client.lastName}` 
-                  : client._id}
+                {client.fullName || client._id}
               </ClientName>
               <DealCount>{formatDealsCount(client.dealCount)}</DealCount>
             </ClientHeader>

@@ -11,6 +11,7 @@ router.get('/my-deals', auth, async (req, res) => {
     const deals = await Deal.find({ email: req.user.email })
       .sort({ createdAt: -1 }) // Sort by newest first (using createdAt instead of savedAt)
       .limit(50);
+    
     res.json({ success: true, deals });
   } catch (error) {
     console.error('Error fetching user deals:', error);
@@ -64,8 +65,7 @@ router.get('/client-portfolios', auth, async (req, res) => {
         const user = await User.findOne({ email: client._id });
         return {
           _id: client._id,
-          firstName: user ? user.firstName : '',
-          lastName: user ? user.lastName : '',
+          fullName: user ? user.fullName : '',
           dealCount: client.dealCount,
           lastDealDate: client.lastDealDate,
           deals: client.deals
@@ -73,10 +73,10 @@ router.get('/client-portfolios', auth, async (req, res) => {
       })
     );
     
-    // Sort by last name and first name
+    // Sort by full name
     clientsWithUserInfo.sort((a, b) => {
-      const aName = `${a.lastName} ${a.firstName}`.toLowerCase();
-      const bName = `${b.lastName} ${b.firstName}`.toLowerCase();
+      const aName = (a.fullName || a._id).toLowerCase();
+      const bName = (b.fullName || b._id).toLowerCase();
       return aName.localeCompare(bName);
     });
     
@@ -108,6 +108,23 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // Validate address field
+    if (!req.body.inputs.address || !req.body.inputs.address.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'חסרה כתובת נכס' 
+      });
+    }
+
+    // Validate address format (should contain comma)
+    const addressParts = req.body.inputs.address.split(',');
+    if (addressParts.length < 2 || !addressParts[0].trim() || !addressParts[1].trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'יש להזין כתובת בפורמט: כתובת, עיר' 
+      });
+    }
+
     // Map the data from client structure to Deal model structure
     const { inputs, results, forecast } = req.body;
     
@@ -116,7 +133,8 @@ router.post('/', auth, async (req, res) => {
     const dealData = {
       userId,
       email: userEmail,
-      name: `חישוב ${new Date().toLocaleDateString('he-IL')}`,
+      address: inputs.address.trim(),
+      name: inputs.address.trim(), // Keep name for backward compatibility but use address
       propertyValue: inputs.propertyValue || 0,
       purchaseTaxRate: inputs.purchaseExpenseRate || 0,
       lawyerFee: 0, // Not in current UI
@@ -358,7 +376,8 @@ router.post('/calculate', async (req, res) => {
     
     // יצירת מסמך חדש ב-DB
     const dealData = {
-      name: `חישוב ${new Date().toLocaleDateString('he-IL')}`,
+      address: inputData.address || `נכס ${new Date().toLocaleDateString('he-IL')}`,
+      name: inputData.address || `חישוב ${new Date().toLocaleDateString('he-IL')}`,
       propertyValue,
       purchaseTaxRate: purchaseExpenseRate,
       lawyerFee: 0, // לא מוזן בממשק הנוכחי

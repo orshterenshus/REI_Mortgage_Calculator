@@ -30,10 +30,8 @@ const SuccessMsg = styled.div`
 
 const Register = ({ onRegisterSuccess, switchToLogin }) => {
   const [form, setForm] = useState({
-    username: '',
     password: '',
-    firstName: '',
-    lastName: '',
+    fullName: '',
     email: ''
   });
   const [error, setError] = useState('');
@@ -67,24 +65,16 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
       {success && <SuccessMsg>{success}</SuccessMsg>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="username">שם משתמש</label>
-          <input id="username" name="username" type="text" value={form.username} onChange={handleChange} required disabled={loading} className="form-control" />
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">סיסמה</label>
-          <input id="password" name="password" type="password" value={form.password} onChange={handleChange} required disabled={loading} className="form-control" />
-        </div>
-        <div className="form-group">
-          <label htmlFor="firstName">שם פרטי</label>
-          <input id="firstName" name="firstName" type="text" value={form.firstName} onChange={handleChange} required disabled={loading} className="form-control" />
-        </div>
-        <div className="form-group">
-          <label htmlFor="lastName">שם משפחה</label>
-          <input id="lastName" name="lastName" type="text" value={form.lastName} onChange={handleChange} required disabled={loading} className="form-control" />
+          <label htmlFor="fullName">שם מלא</label>
+          <input id="fullName" name="fullName" type="text" value={form.fullName} onChange={handleChange} required disabled={loading} className="form-control" />
         </div>
         <div className="form-group">
           <label htmlFor="email">דוא"ל</label>
           <input id="email" name="email" type="email" value={form.email} onChange={handleChange} required disabled={loading} className="form-control" />
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">סיסמה</label>
+          <input id="password" name="password" type="password" value={form.password} onChange={handleChange} required disabled={loading} className="form-control" />
         </div>
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', marginTop: '1rem' }}>
           {loading ? 'נרשם...' : 'הרשם'}
@@ -92,7 +82,7 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
       </form>
       <div style={{ textAlign: 'center', marginTop: '1rem' }}>
         <button type="button" onClick={switchToLogin} style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', textDecoration: 'underline' }}>
-          כבר רשום? התחבר
+          יש לך כבר חשבון? התחבר
         </button>
       </div>
     </RegisterContainer>

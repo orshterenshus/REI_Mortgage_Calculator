@@ -23,7 +23,7 @@ const ErrorMsg = styled.div`
 `;
 
 const Login = ({ onLogin, switchToRegister, switchToForgot }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,7 +33,7 @@ const Login = ({ onLogin, switchToRegister, switchToForgot }) => {
     setError('');
     setLoading(true);
     try {
-      const res = await axios.post('/api/auth/login', { username, password });
+      const res = await axios.post('/api/auth/login', { email, password });
       const { token, user } = res.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -51,12 +51,12 @@ const Login = ({ onLogin, switchToRegister, switchToForgot }) => {
       {error && <ErrorMsg>{error}</ErrorMsg>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="username">שם משתמש</label>
+          <label htmlFor="email">כתובת דוא"ל</label>
           <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
+            id="email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             required
             autoFocus
             disabled={loading}

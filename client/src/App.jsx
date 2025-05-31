@@ -210,6 +210,7 @@ const FIXED_MORTGAGE_YEARS = 30;
 const FIXED_ANNUAL_INTEREST_RATE = 4;
 
 const defaultInputs = {
+  address: '',
   propertyValue: 0,
   purchaseExpenseRate: 0,
   equity: 0,
@@ -271,6 +272,7 @@ const AppInner = () => {
   const [comparisonDealIds, setComparisonDealIds] = useState(null);
   const [viewedDeal, setViewedDeal] = useState(null);
   const [viewedClientEmail, setViewedClientEmail] = useState(null);
+  const [refreshPortfolio, setRefreshPortfolio] = useState(0);
   const location = useLocation();
 
   const handleLogin = (user, token) => {
@@ -416,6 +418,28 @@ const AppInner = () => {
       setIsCalculating(true);
       
       console.log("=== Starting new calculation ===");
+      
+      // Validate address first
+      if (!inputs.address || !inputs.address.trim()) {
+        setNotification({
+          message: 'יש להזין כתובת נכס',
+          success: false
+        });
+        setIsCalculating(false);
+        setTimeout(() => setNotification(null), 3000);
+        return;
+      }
+      
+      const addressParts = inputs.address.split(',');
+      if (addressParts.length < 2 || !addressParts[0].trim() || !addressParts[1].trim()) {
+        setNotification({
+          message: 'יש להזין כתובת בפורמט: כתובת, עיר (לדוגמה: תירוש 56, כרמיאל)',
+          success: false
+        });
+        setIsCalculating(false);
+        setTimeout(() => setNotification(null), 3000);
+        return;
+      }
       
       // Make a copy of inputs and ensure fixed values are set
       const calculationInputs = {
@@ -598,10 +622,6 @@ const AppInner = () => {
 
       // Automatically save to database after calculation
       if (dbConnectionStatus && token) {
-        console.log('Attempting to auto-save calculation to DB...');
-        console.log('DB connected:', dbConnectionStatus);
-        console.log('Token exists:', !!token);
-        
         try {
           const dealData = {
             inputs: calculationInputs,
@@ -609,8 +629,6 @@ const AppInner = () => {
             forecast: forecastData,
             savedAt: new Date()
           };
-
-          console.log('Sending deal data to server:', dealData);
 
           const response = await fetch('http://localhost:5000/api/deals', {
             method: 'POST',
@@ -621,9 +639,7 @@ const AppInner = () => {
             body: JSON.stringify(dealData)
           });
 
-          console.log('Response status:', response.status);
           const data = await response.json();
-          console.log('Response data:', data);
           
           if (data.success) {
             setCurrentDealId(data.deal._id);
@@ -632,9 +648,12 @@ const AppInner = () => {
               success: true
             });
             
+            // Trigger portfolio refresh
+            setRefreshPortfolio(prev => prev + 1);
+            
             // For regular users, switch to portfolio after first save
             if (user && user.role !== 'admin') {
-              setActiveTab('portfolio');
+              handleTabChange('portfolio');
             }
             
             // Hide notification after 3 seconds
@@ -786,6 +805,9 @@ const AppInner = () => {
           message: 'העסקה נשמרה בהצלחה',
           success: true
         });
+        
+        // Trigger portfolio refresh
+        setRefreshPortfolio(prev => prev + 1);
       } else {
         throw new Error(data.error || 'שגיאה בשמירה');
       }
@@ -838,12 +860,12 @@ const AppInner = () => {
 
   const handleBackFromComparison = () => {
     setComparisonDealIds(null);
-    setActiveTab('portfolio');
+    handleTabChange('portfolio');
   };
 
   const handleBackFromViewer = () => {
     setViewedDeal(null);
-    setActiveTab('portfolio');
+    handleTabChange('portfolio');
   };
 
   const handleBackFromViewerToClientPortfolio = () => {
@@ -859,6 +881,15 @@ const AppInner = () => {
   const handleBackFromClientPortfolio = () => {
     setViewedClientEmail(null);
     setActiveTab('clients');
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    
+    // Trigger refresh when switching to portfolio
+    if (tab === 'portfolio') {
+      setRefreshPortfolio(prev => prev + 1);
+    }
   };
 
   // Determine if user is authenticated
@@ -885,14 +916,14 @@ const AppInner = () => {
           <NavLinks>
             <NavLink 
               className={activeTab === 'calculator' ? 'active' : ''} 
-              onClick={() => setActiveTab('calculator')}
+              onClick={() => handleTabChange('calculator')}
             >
               חישוב חדש
             </NavLink>
             {user && user.role !== 'admin' && (
               <NavLink 
                 className={activeTab === 'portfolio' ? 'active' : ''} 
-                onClick={() => setActiveTab('portfolio')}
+                onClick={() => handleTabChange('portfolio')}
               >
                 התיק שלי
               </NavLink>
@@ -900,14 +931,14 @@ const AppInner = () => {
             {user && user.role === 'admin' && (
               <NavLink 
                 className={activeTab === 'clients' ? 'active' : ''} 
-                onClick={() => setActiveTab('clients')}
+                onClick={() => handleTabChange('clients')}
               >
                 תיקי לקוחות
               </NavLink>
             )}
           </NavLinks>
           <div>
-            {user && <UserInfo>שלום, {user.firstName || user.username}</UserInfo>}
+            {user && <UserInfo>שלום, {user.fullName || user.email}</UserInfo>}
             <LogoutButton onClick={handleLogout}>התנתק</LogoutButton>
           </div>
         </NavContent>
@@ -951,6 +982,7 @@ const AppInner = () => {
           <MyPortfolio 
             onOpenDeal={handleOpenDeal}
             onCompareDeals={handleCompareDeals}
+            refreshTrigger={refreshPortfolio}
           />
         )}
         

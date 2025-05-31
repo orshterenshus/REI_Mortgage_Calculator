@@ -9,26 +9,21 @@ require('dotenv').config();
 
 // Register
 router.post('/register', [
-  body('username').isLength({ min: 3 }).withMessage('Username required'),
   body('password').isLength({ min: 5 }).withMessage('Password min 5 chars'),
-  body('firstName').notEmpty(),
-  body('lastName').notEmpty(),
+  body('fullName').isLength({ min: 2 }).withMessage('Full name required'),
   body('email').isEmail().withMessage('Valid email required')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  const { username, password, firstName, lastName, email } = req.body;
+  const { password, fullName, email } = req.body;
   try {
-    if (await User.findOne({ username })) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
     if (await User.findOne({ email })) {
       return res.status(400).json({ message: 'Email already exists' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = new User({ username, passwordHash, firstName, lastName, email });
+    const user = new User({ passwordHash, fullName, email });
     await user.save();
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
@@ -38,21 +33,21 @@ router.post('/register', [
 
 // Login
 router.post('/login', [
-  body('username').notEmpty(),
+  body('email').isEmail().withMessage('Valid email required'),
   body('password').notEmpty()
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  const { username, password } = req.body;
+  const { email, password } = req.body;
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
     const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '2h' });
-    res.json({ token, user: { username: user.username, role: user.role, firstName: user.firstName, lastName: user.lastName, email: user.email } });
+    res.json({ token, user: { email: user.email, role: user.role, fullName: user.fullName } });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -75,25 +70,33 @@ router.post('/reset-password', [
   res.json({ message: 'Password reset logic to be implemented.' });
 });
 
-// Get user by email (for admins only)
+// Get user by email (for admin users)
 router.get('/users/:email', auth, async (req, res) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'אין הרשאה' });
+      return res.status(403).json({ success: false, error: 'Access denied' });
     }
     
-    const email = decodeURIComponent(req.params.email);
+    const { email } = req.params;
     const user = await User.findOne({ email }).select('-passwordHash');
     
     if (!user) {
-      return res.status(404).json({ success: false, error: 'משתמש לא נמצא' });
+      return res.status(404).json({ success: false, error: 'User not found' });
     }
     
-    res.json({ success: true, user });
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ success: false, error: 'שגיאה בטעינת פרטי המשתמש' });
+    res.json({ 
+      success: true, 
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 

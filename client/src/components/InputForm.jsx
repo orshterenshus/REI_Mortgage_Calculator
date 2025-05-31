@@ -37,9 +37,30 @@ const InputForm = ({ inputs, setInputs, onCalculate, onSave, onClear, isCalculat
     });
   };
 
+  const handleTextChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+
+  const validateAddress = (address) => {
+    if (!address || !address.trim()) return false;
+    const parts = address.split(',');
+    return parts.length >= 2 && parts[0].trim() && parts[1].trim();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isCalculating) return;
+    
+    // Validate address before submitting
+    if (!validateAddress(inputs.address)) {
+      alert('יש להזין כתובת מלאה בפורמט: כתובת, עיר (לדוגמה: תירוש 56, כרמיאל)');
+      return;
+    }
+    
     await onCalculate();
   };
 
@@ -48,6 +69,25 @@ const InputForm = ({ inputs, setInputs, onCalculate, onSave, onClear, isCalculat
       <h2>נתוני השקעה</h2>
       <form onSubmit={handleSubmit}>
         <div className="input-grid">
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label htmlFor="address">כתובת הנכס *</label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              className="form-control"
+              value={inputs.address ?? ''}
+              onChange={handleTextChange}
+              placeholder="לדוגמה: תירוש 56, כרמיאל"
+              required
+              disabled={isCalculating}
+              style={{ fontSize: '1rem' }}
+            />
+            <small style={{ color: '#666', fontSize: '0.8rem' }}>
+              יש להזין כתובת מלאה כולל עיר, מופרדת בפסיק
+            </small>
+          </div>
+          
           <div className="form-group">
             <label htmlFor="propertyValue">סכום הרכישה</label>
             <input

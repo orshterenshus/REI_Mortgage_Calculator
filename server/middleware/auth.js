@@ -7,7 +7,7 @@ const auth = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      throw new Error();
+      throw new Error('No token');
     }
     
     // Verify token - use 'secret' as default to match auth.js
@@ -17,7 +17,7 @@ const auth = async (req, res, next) => {
     const user = await User.findById(decoded.userId).select('-passwordHash');
     
     if (!user) {
-      throw new Error();
+      throw new Error('User not found');
     }
     
     // Attach user to request with correct id field
@@ -25,15 +25,13 @@ const auth = async (req, res, next) => {
       id: user._id,
       email: user.email,
       role: user.role,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName
+      fullName: user.fullName
     };
     req.token = token;
     
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('Auth middleware error:', error.message);
     res.status(401).json({ error: 'אנא התחבר למערכת' });
   }
 };

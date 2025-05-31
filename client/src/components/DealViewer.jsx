@@ -158,8 +158,8 @@ const DealViewer = ({ deal, onBack, onBackToPortfolio, userRole, clientEmail }) 
   // Get client name for admin view
   const getClientDisplayName = () => {
     if (userRole === 'admin' && clientEmail) {
-      if (clientInfo && clientInfo.firstName && clientInfo.lastName) {
-        return `${clientInfo.firstName} ${clientInfo.lastName}`;
+      if (clientInfo && clientInfo.fullName) {
+        return clientInfo.fullName;
       }
       return clientEmail; // Fallback to email
     }
@@ -186,7 +186,7 @@ const DealViewer = ({ deal, onBack, onBackToPortfolio, userRole, clientEmail }) 
       <Header>
         <div>
           <Title>
-            {deal.name || `עסקה מ-${format(new Date(deal.createdAt), 'dd/MM/yyyy')}`}
+            {deal.address || deal.name || `עסקה מ-${format(new Date(deal.createdAt), 'dd/MM/yyyy')}`}
           </Title>
           {clientName && (
             <ClientSubtitle>לקוח: {clientName}</ClientSubtitle>

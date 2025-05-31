@@ -122,7 +122,7 @@ const ErrorMessage = styled.div`
   color: #c00;
 `;
 
-const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
+const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
   const [deals, setDeals] = useState([]);
   const [selectedDeals, setSelectedDeals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -132,19 +132,34 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
     fetchMyDeals();
   }, []);
 
+  useEffect(() => {
+    if (refreshTrigger) {
+      fetchMyDeals();
+    }
+  }, [refreshTrigger]);
+
   const fetchMyDeals = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setError('אין הרשאה - אנא התחבר מחדש');
+        return;
+      }
+      
       const response = await axios.get('/api/deals/my-deals', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.data.success) {
         setDeals(response.data.deals);
+      } else {
+        setError(response.data.error || 'שגיאה בטעינת העסקאות');
       }
     } catch (err) {
-      setError('שגיאה בטעינת העסקאות');
       console.error('Error fetching deals:', err);
+      setError('שגיאה בטעינת העסקאות');
     } finally {
       setLoading(false);
     }
@@ -201,7 +216,7 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
           <DealCard key={deal._id}>
             <DealHeader>
               <DealName onClick={() => onOpenDeal(deal)}>
-                {deal.name || `עסקה מ-${format(new Date(deal.createdAt), 'dd/MM/yyyy', { locale: he })}`}
+                {deal.address || deal.name || `עסקה מ-${format(new Date(deal.createdAt), 'dd/MM/yyyy', { locale: he })}`}
               </DealName>
               <DealDate>
                 {format(new Date(deal.createdAt), 'dd/MM/yyyy HH:mm', { locale: he })}

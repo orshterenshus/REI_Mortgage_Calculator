@@ -1,0 +1,61 @@
+/**
+ * ========================================
+ * סטיילים לגרף רווחיות (ProfitChart Styles)
+ * ========================================
+ * 
+ * תיאור:
+ * קובץ זה מכיל את כל הסטיילים עבור גרף הרווחיות
+ */
+
+/* מיכל הגרף */
+.profit-chart-container {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+/* מעטפת הגרף */
+.chart-wrapper {
+  position: relative;
+  height: 400px;
+  width: 100%;
+}
+
+/* רספונסיב - טאבלט */
+@media (max-width: 768px) {
+  .profit-chart-container {
+    padding: 1rem;
+  }
+  
+  .chart-wrapper {
+    height: 350px;
+  }
+}
+
+/* רספונסיב - מובייל */
+@media (max-width: 480px) {
+  .profit-chart-container {
+    padding: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .chart-wrapper {
+    height: 300px;
+  }
+}
+
+/* הדפסה */
+@media print {
+  .profit-chart-container {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    margin-bottom: 1.5rem;
+    page-break-inside: avoid;
+  }
+  
+  .chart-wrapper {
+    height: 350px;
+  }
+} 

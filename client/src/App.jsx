@@ -1,11 +1,35 @@
+/**
+ * ========================================
+ * רכיב האפליקציה הראשי (App Component)
+ * ========================================
+ * 
+ * תיאור:
+ * זהו הרכיב הראשי של האפליקציה שמנהל את כל המצב (state) המרכזי
+ * ומכיל את כל הלוגיקה העסקית של מחשבון ההשקעות
+ * 
+ * תלויות:
+ * - React: ספריית ה-UI
+ * - axios: לביצוע קריאות HTTP
+ * - @emotion/styled: לעיצוב רכיבים
+ * 
+ * רכיבים:
+ * - Header: כותרת האפליקציה עם ניווט
+ * - InputForm: טופס הזנת נתונים
+ * - Summary: תצוגת סיכום תוצאות
+ * - ForecastTable: טבלת תחזית שנתית
+ * - MyPortfolio: תיק העסקאות האישי
+ * - ClientPortfolios: תיקי לקוחות (למנהלים)
+ * - Login/Register: מסכי התחברות והרשמה
+ */
+
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
-import InputForm from './components/InputForm';
-import ResultsSummary from './components/ResultsSummary';
-import ForecastTable from './components/ForecastTable';
-import PropertyValueChart from './components/PropertyValueChart';
-import CashflowChart from './components/CashflowChart';
-import ProfitChart from './components/ProfitChart';
+import InputForm from './components/calculator/InputForm';
+import ResultsSummary from './components/calculator/ResultsSummary';
+import ForecastTable from './components/tables/ForecastTable';
+import PropertyValueChart from './components/charts/PropertyValueChart';
+import CashflowChart from './components/charts/CashflowChart';
+import ProfitChart from './components/charts/ProfitChart';
 import { saveData, loadData, clearData } from './utils/storage';
 import { saveCalculation } from './utils/fileDb';
 import {
@@ -26,16 +50,16 @@ import {
 import { calculateMonthlyPaymentFromSchedule } from './utils/mortgageCalculations';
 import { getLatestDeal, createDeal, updateDealInputs, mapDealToFormInputs } from './services/dealService';
 import api from './utils/api';
-import Login from './components/Login';
-import Register from './components/Register';
-import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
+import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
 import { BrowserRouter, useLocation } from 'react-router-dom';
-import MyPortfolio from './components/MyPortfolio';
-import ClientPortfolios from './components/ClientPortfolios';
-import DealComparison from './components/DealComparison';
-import DealViewer from './components/DealViewer';
-import ClientPortfolioView from './components/ClientPortfolioView';
+import MyPortfolio from './components/portfolio/MyPortfolio';
+import ClientPortfolios from './components/portfolio/ClientPortfolios';
+import DealComparison from './components/deals/DealComparison';
+import DealViewer from './components/deals/DealViewer';
+import ClientPortfolioView from './components/portfolio/ClientPortfolioView';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -240,15 +264,15 @@ const AuthScreen = ({ showRegister, setShowRegister, showForgot, setShowForgot, 
   const location = useLocation();
   
   if (location.pathname === '/reset-password') {
-    return <ResetPassword switchToLogin={() => { setShowReset(false); setShowRegister(false); setShowForgot(false); }} />;
+    return <ResetPassword onBackToLogin={() => { setShowReset(false); setShowRegister(false); setShowForgot(false); }} />;
   }
   if (showForgot) {
-    return <ForgotPassword switchToLogin={() => { setShowForgot(false); setShowRegister(false); }} />;
+    return <ForgotPassword onBackToLogin={() => { setShowForgot(false); setShowRegister(false); }} />;
   }
   if (showRegister) {
-    return <Register onRegisterSuccess={() => setShowRegister(false)} switchToLogin={() => setShowRegister(false)} />;
+    return <Register onRegister={() => setShowRegister(false)} switchToLogin={() => setShowRegister(false)} />;
   }
-  return <Login onLogin={handleLogin} switchToRegister={() => setShowRegister(true)} switchToForgot={() => { setShowForgot(true); setShowRegister(false); }} />;
+  return <Login onLogin={handleLogin} onRegisterClick={() => setShowRegister(true)} onForgotPasswordClick={() => { setShowForgot(true); setShowRegister(false); }} />;
 };
 
 const AppInner = () => {
@@ -278,6 +302,11 @@ const AppInner = () => {
   const handleLogin = (user, token) => {
     setUser(user);
     setToken(token);
+    
+    // שמירה ל-localStorage
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('token', token);
+    
     // Set initial tab based on user role
     if (user.role === 'admin') {
       setActiveTab('clients');

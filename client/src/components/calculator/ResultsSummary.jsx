@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from '@emotion/styled';
-import { formatCurrency, formatPercentage } from '../utils/formatting';
+import { formatCurrency, formatPercentage } from '../../utils/formatting';
 
 const SummaryContainer = styled.div`
   margin-bottom: 2rem;

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import ResultsSummary from './ResultsSummary';
-import ForecastTable from './ForecastTable';
-import PropertyValueChart from './PropertyValueChart';
-import CashflowChart from './CashflowChart';
-import ProfitChart from './ProfitChart';
+import ResultsSummary from '../calculator/ResultsSummary';
+import ForecastTable from '../tables/ForecastTable';
+import PropertyValueChart from '../charts/PropertyValueChart';
+import CashflowChart from '../charts/CashflowChart';
+import ProfitChart from '../charts/ProfitChart';
 import axios from 'axios';
 
 const ViewerContainer = styled.div`

@@ -1,6 +1,441 @@
 import { calculateMonthlyPaymentFromSchedule, getFullPaymentSchedule } from './mortgageCalculations';
 import api from './api';
 
+/**
+ * ========================================
+ * מודול חישובי השקעה בנדל"ן
+ * ========================================
+ * 
+ * תיאור:
+ * מודול זה מכיל את כל הפונקציות לחישוב כדאיות השקעה בנדל"ן
+ * כולל חישובי משכנתא, תזרים מזומנים, תשואות ותחזית לטווח ארוך
+ * 
+ * פונקציות עיקריות:
+ * - calculateResults: חישוב תוצאות מיידיות
+ * - calculateForecast: יצירת תחזית ל-30 שנה
+ * - calculateSchedule: יצירת לוח סילוקין (שפיצר)
+ * - calculateWithSchedules: חישוב משולב עם לוחות סילוקין
+ * 
+ * נוסחאות מתמטיות:
+ * - תשלום חודשי (שפיצר): PMT = P × r × (1+r)^n / ((1+r)^n - 1)
+ * - תשואה על הנכס: (הכנסה נטו שנתית / מחיר הנכס) × 100
+ * - תשואה על ההון: (תזרים חודשי / השקעה חודשית) × 100
+ */
+
+/**
+ * חישוב תוצאות מיידיות של ההשקעה
+ * 
+ * @param {Object} inputs - נתוני הקלט מהמשתמש
+ * @param {number} inputs.propertyValue - מחיר הנכס
+ * @param {number} inputs.equity - הון עצמי
+ * @param {number} inputs.purchaseExpenseRate - אחוז הוצאות רכישה
+ * @param {number} inputs.renovationCost - עלות שיפוצים
+ * @param {number} inputs.purchaseTax - מס רכישה
+ * @param {number} inputs.monthlyRent - שכירות חודשית
+ * @param {number} inputs.expenseRate - אחוז הוצאות שנתיות
+ * @param {number} inputs.years - תקופת המשכנתא בשנים
+ * @param {number} inputs.annualInterestRate - ריבית שנתית באחוזים
+ * @param {number} inputs.marketValue - שווי שוק נוכחי (אופציונלי)
+ * 
+ * @returns {Object} תוצאות החישוב:
+ * - purchaseExpenses: הוצאות רכישה
+ * - mortgageAmount: גובה המשכנתא
+ * - monthlyPayment: תשלום חודשי למשכנתא
+ * - annualPayment: תשלום שנתי למשכנתא
+ * - annualIncome: הכנסה שנתית ברוטו
+ * - annualNetIncome: הכנסה שנתית נטו
+ * - annualCashflow: תזרים שנתי
+ * - monthlyCashflow: תזרים חודשי
+ * - totalInvestment: סך ההשקעה
+ * - propertyYield: תשואה על הנכס באחוזים
+ * - equityYield: תשואה על ההון באחוזים
+ * - marketValue: שווי שוק
+ */
+export const calculateResults = (inputs) => {
+  /**
+   * ========================================
+   * שלב 1: חילוץ והמרת נתונים
+   * ========================================
+   */
+  const propertyValue = parseFloat(inputs.propertyValue) || 0;
+  const equity = parseFloat(inputs.equity) || 0;
+  const purchaseExpenseRate = parseFloat(inputs.purchaseExpenseRate) || 0;
+  const renovationCost = parseFloat(inputs.renovationCost) || 0;
+  const purchaseTax = parseFloat(inputs.purchaseTax) || 0;
+  const monthlyRent = parseFloat(inputs.monthlyRent) || 0;
+  const expenseRate = parseFloat(inputs.expenseRate) || 0;
+  const years = parseInt(inputs.years) || 0;
+  const annualInterestRate = parseFloat(inputs.annualInterestRate) || 4.0;
+  
+  /**
+   * ========================================
+   * שלב 2: חישובי עלויות רכישה והשקעה
+   * ========================================
+   */
+  
+  // הוצאות רכישה = מחיר הנכס × אחוז הוצאות רכישה
+  const purchaseExpenses = (propertyValue * purchaseExpenseRate) / 100;
+  
+  // גובה המשכנתא = מחיר הנכס - הון עצמי
+  const mortgageAmount = propertyValue - equity;
+  
+  // סך ההשקעה = הון עצמי + הוצאות רכישה + שיפוצים + מס רכישה
+  const totalInvestment = equity + purchaseExpenses + renovationCost + purchaseTax;
+  
+  /**
+   * ========================================
+   * שלב 3: חישוב תשלום חודשי למשכנתא (נוסחת שפיצר)
+   * ========================================
+   */
+  let monthlyPayment = 0;
+  if (mortgageAmount > 0 && years > 0) {
+    // ריבית חודשית = ריבית שנתית / 12
+    const monthlyRate = annualInterestRate / 100 / 12;
+    
+    // מספר תשלומים = שנים × 12
+    const totalMonths = years * 12;
+    
+    if (monthlyRate > 0) {
+      /**
+       * נוסחת שפיצר לתשלום חודשי קבוע:
+       * PMT = P × r × (1+r)^n / ((1+r)^n - 1)
+       * 
+       * כאשר:
+       * PMT = תשלום חודשי
+       * P = סכום ההלוואה (mortgageAmount)
+       * r = ריבית חודשית (monthlyRate)
+       * n = מספר תשלומים (totalMonths)
+       */
+      monthlyPayment = mortgageAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) /
+                       (Math.pow(1 + monthlyRate, totalMonths) - 1);
+    } else {
+      // אם אין ריבית - חלוקה פשוטה
+      monthlyPayment = mortgageAmount / totalMonths;
+    }
+  }
+  
+  /**
+   * ========================================
+   * שלב 4: חישוב הכנסות והוצאות
+   * ========================================
+   */
+  
+  // הכנסה שנתית ברוטו = שכירות חודשית × 12
+  const annualIncome = monthlyRent * 12;
+  
+  // הכנסה שנתית נטו = הכנסה ברוטו - הוצאות תפעוליות
+  const annualNetIncome = annualIncome - (annualIncome * expenseRate / 100);
+  
+  // תשלום שנתי למשכנתא
+  const annualPayment = monthlyPayment * 12;
+  
+  /**
+   * ========================================
+   * שלב 5: חישוב תזרים מזומנים
+   * ========================================
+   */
+  
+  // תזרים שנתי = הכנסה נטו - תשלומי משכנתא
+  const annualCashflow = annualNetIncome - annualPayment;
+  
+  // תזרים חודשי = תזרים שנתי / 12
+  const monthlyCashflow = annualCashflow / 12;
+  
+  /**
+   * ========================================
+   * שלב 6: חישוב תשואות
+   * ========================================
+   */
+  
+  /**
+   * תשואה על הנכס (Property Yield):
+   * מודד כמה אחוזים מערך הנכס מניבה ההכנסה הנטו
+   * = (הכנסה שנתית נטו / מחיר הנכס) × 100
+   */
+  const propertyYield = propertyValue > 0 ? (annualNetIncome / propertyValue) * 100 : 0;
+  
+  /**
+   * תשואה על ההון העצמי (Equity Yield / Cash on Cash Return):
+   * מודד כמה אחוזים מההשקעה העצמית מניב התזרים
+   * = (תזרים חודשי / השקעה חודשית) × 100
+   * 
+   * כאשר השקעה חודשית = סך ההשקעה / 12
+   */
+  const equityYield = totalInvestment > 0 ? (monthlyCashflow / (totalInvestment / 12)) * 100 : 0;
+  
+  // שווי שוק - אם לא הוזן, משתמשים במחיר הנכס
+  const marketValue = parseFloat(inputs.marketValue) || propertyValue;
+  
+  /**
+   * ========================================
+   * החזרת התוצאות
+   * ========================================
+   */
+  return {
+    purchaseExpenses: Math.round(purchaseExpenses),
+    mortgageAmount: Math.round(mortgageAmount),
+    monthlyPayment: Math.round(monthlyPayment),
+    annualPayment: Math.round(annualPayment),
+    annualIncome: Math.round(annualIncome),
+    annualNetIncome: Math.round(annualNetIncome),
+    annualCashflow: Math.round(annualCashflow),
+    monthlyCashflow: Math.round(monthlyCashflow),
+    totalInvestment: Math.round(totalInvestment),
+    propertyYield: parseFloat(propertyYield.toFixed(2)),
+    equityYield: parseFloat(equityYield.toFixed(2)),
+    marketValue: Math.round(marketValue),
+  };
+};
+
+/**
+ * יצירת תחזית השקעה ל-30 שנה
+ * 
+ * @param {Object} inputs - נתוני הקלט
+ * @param {Object} results - תוצאות החישוב המיידי
+ * 
+ * @returns {Array} מערך של 30 אובייקטים, כל אחד מייצג שנה בתחזית
+ * 
+ * כל שנה כוללת:
+ * - year: מספר השנה
+ * - propertyValue: ערך הנכס באותה שנה
+ * - marketValue: שווי שוק באותה שנה
+ * - remainingLoan: יתרת המשכנתא
+ * - equity: הון עצמי בנכס
+ * - accumulatedCashflow: תזרים מצטבר
+ * - annualNetIncome: הכנסה נטו שנתית
+ * - yearlyCashflow: תזרים שנתי
+ * - propertyYield: תשואה על הנכס
+ * - equityYield: תשואה על ההון
+ * - equityPercentage: אחוז רווח על ההון
+ * - totalProfitPercentage: אחוז רווח כולל
+ */
+export const calculateForecast = (inputs, results) => {
+  const forecast = [];
+  
+  /**
+   * ========================================
+   * הכנת נתונים לתחזית
+   * ========================================
+   */
+  const propertyValue = parseFloat(inputs.propertyValue) || 0;
+  const mortgageAmount = results.mortgageAmount || 0;
+  const annualInterestRate = parseFloat(inputs.annualInterestRate) || 4.0;
+  const monthlyRate = annualInterestRate / 100 / 12;
+  const years = parseInt(inputs.years) || 0;
+  const annualAppreciationRate = parseFloat(inputs.annualAppreciationRate) || 0;
+  const monthlyPayment = results.monthlyPayment || 0;
+  const annualNetIncome = results.annualNetIncome || 0;
+  const annualCashflow = results.annualCashflow || 0;
+  const totalInvestment = results.totalInvestment || 0;
+  const propertyYield = results.propertyYield || 0;
+  const equityYield = results.equityYield || 0;
+  
+  // משתנים מצטברים
+  let currentPropertyValue = propertyValue;
+  let currentMarketValue = results.marketValue || propertyValue;
+  let accumulatedCashflow = 0;
+  
+  /**
+   * ========================================
+   * לולאת חישוב לכל שנה (30 שנה)
+   * ========================================
+   */
+  for (let year = 1; year <= 30; year++) {
+    /**
+     * חישוב יתרת המשכנתא
+     * משתמשים בנוסחה לחישוב יתרת הלוואה בשיטת שפיצר
+     */
+    let remainingLoan = null;
+    if (year < years && mortgageAmount > 0) {
+      const monthsPassed = year * 12;
+      const totalMonths = years * 12;
+      const monthsRemaining = totalMonths - monthsPassed;
+      
+      if (monthlyRate > 0 && monthsRemaining > 0) {
+        /**
+         * נוסחה לחישוב יתרת הלוואה:
+         * יתרה = תשלום חודשי × [(1 - (1+r)^-n) / r]
+         * 
+         * כאשר:
+         * r = ריבית חודשית
+         * n = מספר תשלומים שנותרו
+         */
+        remainingLoan = monthlyPayment * 
+                       (1 - Math.pow(1 + monthlyRate, -monthsRemaining)) / 
+                       monthlyRate;
+      } else if (monthlyRate === 0 && monthsRemaining > 0) {
+        // במקרה של ריבית 0
+        remainingLoan = mortgageAmount - (monthlyPayment * monthsPassed);
+      }
+      
+      // וידוא שהיתרה לא שלילית
+      if (remainingLoan <= 0 || isNaN(remainingLoan)) {
+        remainingLoan = null;
+      } else {
+        remainingLoan = Math.round(remainingLoan);
+      }
+    }
+    
+    /**
+     * עדכון ערך הנכס ושווי השוק
+     * לפי אחוז ההשבחה השנתי
+     */
+    if (year > 1 && annualAppreciationRate > 0) {
+      currentPropertyValue = currentPropertyValue * (1 + (annualAppreciationRate / 100));
+      currentMarketValue = currentMarketValue * (1 + (annualAppreciationRate / 100));
+    }
+    
+    /**
+     * חישוב תזרים שנתי
+     * אחרי סיום המשכנתא, כל ההכנסה הנטו הופכת לתזרים
+     */
+    const yearlyCashflow = (year >= years) ? annualNetIncome : annualCashflow;
+    
+    // צבירת התזרים המצטבר
+    accumulatedCashflow += yearlyCashflow;
+    
+    /**
+     * חישוב הון עצמי בנכס
+     * = ערך הנכס - יתרת המשכנתא
+     */
+    const equity = currentPropertyValue - (remainingLoan || 0);
+    
+    /**
+     * חישוב אחוזי רווח
+     */
+    
+    // אחוז רווח על ההון העצמי = (הון עצמי / השקעה מקורית - 1) × 100
+    const equityPercentage = totalInvestment > 0 ? 
+                            ((equity / totalInvestment) * 100) - 100 : 0;
+    
+    // אחוז רווח כולל = ((הון עצמי + תזרים מצטבר - השקעה) / השקעה) × 100
+    const totalProfitPercentage = totalInvestment > 0 ? 
+                                 ((equity - totalInvestment + accumulatedCashflow) / totalInvestment * 100) : 0;
+    
+    /**
+     * הוספת השנה למערך התחזית
+     */
+    forecast.push({
+      year,
+      propertyValue: Math.round(currentPropertyValue),
+      marketValue: Math.round(currentMarketValue),
+      remainingLoan,
+      equity: Math.round(equity),
+      accumulatedCashflow: Math.round(accumulatedCashflow),
+      annualNetIncome: Math.round(annualNetIncome),
+      yearlyCashflow: Math.round(yearlyCashflow),
+      propertyYield: parseFloat(propertyYield.toFixed(2)),
+      equityYield: parseFloat(equityYield.toFixed(2)),
+      equityPercentage: parseFloat(equityPercentage.toFixed(2)),
+      totalProfitPercentage: parseFloat(totalProfitPercentage.toFixed(2)),
+    });
+  }
+  
+  return forecast;
+};
+
+/**
+ * יצירת לוח סילוקין (שפיצר) למשכנתא
+ * 
+ * @param {number} principal - סכום ההלוואה
+ * @param {number} annualRate - ריבית שנתית באחוזים
+ * @param {number} years - מספר שנים
+ * 
+ * @returns {Array} מערך של תשלומים חודשיים
+ * 
+ * כל תשלום כולל:
+ * - month: מספר החודש
+ * - payment: סכום התשלום החודשי
+ * - principal: החזר קרן
+ * - interest: תשלום ריבית
+ * - balance: יתרת ההלוואה
+ */
+export const calculateSchedule = (principal, annualRate, years) => {
+  const schedule = [];
+  
+  // בדיקת תקינות נתונים
+  if (!principal || !years || principal <= 0 || years <= 0) {
+    return schedule;
+  }
+  
+  // חישובים ראשוניים
+  const monthlyRate = annualRate / 100 / 12;
+  const totalMonths = years * 12;
+  let balance = principal;
+  
+  // חישוב תשלום חודשי קבוע
+  let monthlyPayment;
+  if (monthlyRate > 0) {
+    monthlyPayment = principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) /
+                     (Math.pow(1 + monthlyRate, totalMonths) - 1);
+  } else {
+    monthlyPayment = principal / totalMonths;
+  }
+  
+  /**
+   * לולאה לחישוב כל תשלום חודשי
+   */
+  for (let month = 1; month <= totalMonths; month++) {
+    // חישוב ריבית לחודש הנוכחי
+    const interest = monthlyRate > 0 ? balance * monthlyRate : 0;
+    
+    // חישוב החזר הקרן
+    const principalPayment = monthlyPayment - interest;
+    
+    // עדכון היתרה
+    balance -= principalPayment;
+    
+    // וידוא שהיתרה לא שלילית
+    if (balance < 0.01) {
+      balance = 0;
+    }
+    
+    // הוספת התשלום ללוח
+    schedule.push({
+      month,
+      payment: Math.round(monthlyPayment),
+      principal: Math.round(principalPayment),
+      interest: Math.round(interest),
+      balance: Math.round(balance),
+    });
+  }
+  
+  return schedule;
+};
+
+/**
+ * חישוב משולב עם לוחות סילוקין
+ * 
+ * @param {Object} inputs - נתוני הקלט
+ * 
+ * @returns {Object} אובייקט המכיל:
+ * - results: תוצאות החישוב
+ * - forecast: תחזית 30 שנה
+ * - schedule: לוח סילוקין מפורט
+ * 
+ * פונקציה זו מאחדת את כל החישובים ומספקת תמונה מלאה
+ */
+export const calculateWithSchedules = (inputs) => {
+  // חישוב תוצאות מיידיות
+  const results = calculateResults(inputs);
+  
+  // יצירת תחזית
+  const forecast = calculateForecast(inputs, results);
+  
+  // יצירת לוח סילוקין
+  const schedule = calculateSchedule(
+    results.mortgageAmount,
+    parseFloat(inputs.annualInterestRate) || 4.0,
+    parseInt(inputs.years) || 0
+  );
+  
+  return {
+    results,
+    forecast,
+    schedule,
+  };
+};
+
 // Calculate purchase expenses - חישוב הוצאות רכישה
 export const calculatePurchaseExpenses = (propertyValue, purchaseExpenseRate) => {
   if (!propertyValue || !purchaseExpenseRate) return 0;
@@ -18,42 +453,59 @@ export const calculateMonthlyPayment = async (loanAmount, annualInterestRate, ye
   if (!loanAmount || !years) return 0;
 
   try {
-    console.log(`🔄 מנסה לקבל totalPayment מלוח shpizer עבור ${years} שנים`);
+    console.log(`🔄 מחשב תשלום חודשי עבור הלוואה של ${loanAmount}₪ ל-${years} שנים`);
     
-    // Use the correct API endpoint
+    // חישוב המכפיל - סכום הלוואה חלקי 100,000
+    const multiplier = loanAmount / 100000;
+    console.log(`מכפיל: ${loanAmount} ÷ 100,000 = ${multiplier}`);
+    
+    // קריאה ישירה לטבלת shpizer לפי תקופת השנים
     const response = await api.get('/schedules/adjustedSchedule', {
       params: {
         purpose: 'דיור',
         years: years,
-        loanAmount: loanAmount,
+        loanAmount: 100000, // תמיד 100K לקבלת הערך הבסיסי
         interest: annualInterestRate
       }
     });
     
     if (response.data && response.data.monthlyPayment) {
-      console.log(`✅ התקבל totalPayment מה-DB: ${response.data.monthlyPayment}`);
-      return response.data.monthlyPayment;
+      const basePayment = response.data.monthlyPayment;
+      const finalPayment = Math.round(basePayment * multiplier);
+      
+      console.log(`✅ נתקבל תשלום בסיסי מטבלת shpizer: ${basePayment}₪`);
+      console.log(`✅ תשלום סופי: ${basePayment} × ${multiplier} = ${finalPayment}₪`);
+      
+      return finalPayment;
     }
     
-    throw new Error('No monthly payment data received');
+    throw new Error('No monthly payment data received from shpizer table');
   } catch (dbError) {
-    console.log('שגיאה בקבלת totalPayment מה-DB:', dbError);
-    console.log('מחשב לפי נוסחה רגילה...');
+    console.log('❌ שגיאה בקבלת נתונים מטבלת shpizer:', dbError.message);
+    console.log('🔄 עובר לחישוב גיבוי...');
     
-    // Fallback to formula calculation
-    const monthlyInterestRate = annualInterestRate / 100 / 12;
-    const numberOfPayments = years * 12;
+    // גיבוי - טבלה קבועה לפי תקופות סטנדרטיות
+    const PAYMENT_RATES = {
+      10: 1012, // 10 שנים: 1012 ש"ח לכל 100K
+      15: 750,  // 15 שנים: 750 ש"ח לכל 100K  
+      20: 627,  // 20 שנים: 627 ש"ח לכל 100K
+      25: 562,  // 25 שנים: 562 ש"ח לכל 100K
+      30: 525   // 30 שנים: 525 ש"ח לכל 100K
+    };
     
-    if (monthlyInterestRate === 0) {
-      return loanAmount / numberOfPayments;
-    }
+    // קביעת התקופה הקרובה ביותר
+    let termYears;
+    if (years <= 10) termYears = 10;
+    else if (years > 10 && years <= 15) termYears = 15;
+    else if (years > 15 && years <= 20) termYears = 20;
+    else if (years > 20 && years <= 25) termYears = 25;
+    else termYears = 30;
     
-    const monthlyPayment = loanAmount * 
-      (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments)) /
-      (Math.pow(1 + monthlyInterestRate, numberOfPayments) - 1);
+    const multiplier = loanAmount / 100000;
+    const fallbackPayment = Math.round(PAYMENT_RATES[termYears] * multiplier);
     
-    console.log(`💡 חישוב לפי נוסחה: ${Math.round(monthlyPayment)}`);
-    return Math.round(monthlyPayment);
+    console.log(`💡 חישוב גיבוי: ${PAYMENT_RATES[termYears]} × ${multiplier} = ${fallbackPayment}₪`);
+    return fallbackPayment;
   }
 };
 
@@ -205,15 +657,23 @@ export const generateYearlyForecast = async (
 
     // Calculate annual income - חישוב הכנסה שנתית
     const annualIncome = calculateAnnualIncome(monthlyRent);
+    console.log('annualIncome calculated:', annualIncome);
+    console.log('🔍 calculateAnnualIncome input monthlyRent:', monthlyRent);
 
     // Calculate annual net income - חישוב הכנסה שנתית נטו
     const annualNetIncome = calculateAnnualNetIncome(annualIncome, expenseRate);
+    console.log('annualNetIncome calculated:', annualNetIncome);
+    console.log('🔍 calculateAnnualNetIncome inputs - annualIncome:', annualIncome, 'expenseRate:', expenseRate);
 
     // Calculate annual payment - חישוב תשלום שנתי
     const annualPayment = calculateAnnualPayment(monthlyPayment);
+    console.log('annualPayment calculated:', annualPayment);
+    console.log('🔍 calculateAnnualPayment input monthlyPayment:', monthlyPayment);
 
     // Calculate annual cashflow - חישוב תזרים מזומנים שנתי
     const annualCashflow = calculateAnnualCashflow(annualNetIncome, annualPayment);
+    console.log('annualCashflow calculated:', annualCashflow);
+    console.log('🔍 calculateAnnualCashflow inputs - annualNetIncome:', annualNetIncome, 'annualPayment:', annualPayment);
 
     let accumulatedCashflow = 0;
     // שינוי: ערך הנכס בשנה הראשונה כבר כולל את ההתייקרות
@@ -253,6 +713,13 @@ export const generateYearlyForecast = async (
           equity: Math.round(currentEquity),
           accumulatedCashflow: Math.round(accumulatedCashflow),
           totalProfitPercentage: parseFloat((totalProfit / totalInvestment * 100).toFixed(2)),
+          // נתונים לטבלת התחזית
+          annualIncome: Math.round(annualIncome),
+          operatingExpenses: Math.round(annualIncome * (expenseRate / 100)),
+          netIncome: Math.round(annualNetIncome),
+          mortgagePayment: year < mortgageYears ? Math.round(annualPayment) : 0,
+          cashflow: Math.round(yearlyCashflow),
+          // נתונים נוספים
           annualNetIncome: Math.round(annualNetIncome),
           yearlyCashflow: Math.round(yearlyCashflow),
           propertyYield: parseFloat(propertyYield.toFixed(2)),
@@ -270,6 +737,13 @@ export const generateYearlyForecast = async (
           equity: Math.round(currentPropertyValue),
           accumulatedCashflow: Math.round(accumulatedCashflow),
           totalProfitPercentage: 0,
+          // נתונים לטבלת התחזית
+          annualIncome: Math.round(annualIncome),
+          operatingExpenses: Math.round(annualIncome * (expenseRate / 100)),
+          netIncome: Math.round(annualNetIncome),
+          mortgagePayment: year < mortgageYears ? Math.round(annualPayment) : 0,
+          cashflow: Math.round(annualNetIncome),
+          // נתונים נוספים
           annualNetIncome: Math.round(annualNetIncome),
           yearlyCashflow: Math.round(annualNetIncome),
           propertyYield: 0,
@@ -282,6 +756,11 @@ export const generateYearlyForecast = async (
     if (forecast.length > 30) {
       forecast.pop();
     }
+    
+    console.log('generateYearlyForecast completed - forecast length:', forecast.length);
+    console.log('generateYearlyForecast - sample data:', forecast?.[0]);
+    console.log('generateYearlyForecast - returning forecast:', forecast);
+    
     return forecast;
   } catch (error) {
     console.error('שגיאה בקבלת לוח תשלומים מהשרת:', error);
@@ -304,15 +783,23 @@ export const generateYearlyForecast = async (
     
     // Calculate annual income - חישוב הכנסה שנתית
     const annualIncome = calculateAnnualIncome(monthlyRent);
+    console.log('(fallback) annualIncome calculated:', annualIncome);
+    console.log('🔍 (fallback) calculateAnnualIncome input monthlyRent:', monthlyRent);
     
     // Calculate annual net income - חישוב הכנסה שנתית נטו
     const annualNetIncome = calculateAnnualNetIncome(annualIncome, expenseRate);
+    console.log('(fallback) annualNetIncome calculated:', annualNetIncome);
+    console.log('🔍 (fallback) calculateAnnualNetIncome inputs - annualIncome:', annualIncome, 'expenseRate:', expenseRate);
     
     // Calculate annual payment - חישוב תשלום שנתי
     const annualPayment = calculateAnnualPayment(monthlyPayment);
+    console.log('(fallback) annualPayment calculated:', annualPayment);
+    console.log('🔍 (fallback) calculateAnnualPayment input monthlyPayment:', monthlyPayment);
     
     // Calculate annual cashflow - חישוב תזרים מזומנים שנתי
     const annualCashflow = calculateAnnualCashflow(annualNetIncome, annualPayment);
+    console.log('(fallback) annualCashflow calculated:', annualCashflow);
+    console.log('🔍 (fallback) calculateAnnualCashflow inputs - annualNetIncome:', annualNetIncome, 'annualPayment:', annualPayment);
     
     let accumulatedCashflow = 0;
     let currentPropertyValue = marketValue; // משתמשים בערך השוק ההתחלתי
@@ -374,6 +861,13 @@ export const generateYearlyForecast = async (
           equity: Math.round(currentEquity),
           accumulatedCashflow: Math.round(accumulatedCashflow),
           totalProfitPercentage: parseFloat((totalProfit / totalInvestment * 100).toFixed(2)),
+          // נתונים לטבלת התחזית
+          annualIncome: Math.round(annualIncome),
+          operatingExpenses: Math.round(annualIncome * (expenseRate / 100)),
+          netIncome: Math.round(annualNetIncome),
+          mortgagePayment: year < mortgageYears ? Math.round(annualPayment) : 0,
+          cashflow: Math.round(yearlyCashflow),
+          // נתונים נוספים
           annualNetIncome: Math.round(annualNetIncome),
           yearlyCashflow: Math.round(yearlyCashflow),
           propertyYield: parseFloat(propertyYield.toFixed(2)),
@@ -386,28 +880,40 @@ export const generateYearlyForecast = async (
       } catch (error) {
         console.error(`שגיאה בחישוב שנה ${year}:`, error);
         // במקרה של שגיאה, נוסיף שורה עם ערכים בסיסיים
-    forecast.push({
-      year,
+        forecast.push({
+          year,
           propertyValue: Math.round(currentPropertyValue),
           marketValue: Math.round(currentPropertyValue),
           remainingLoan: null,
           equity: Math.round(currentPropertyValue),
           accumulatedCashflow: Math.round(accumulatedCashflow),
           totalProfitPercentage: 0,
+          // נתונים לטבלת התחזית
+          annualIncome: Math.round(annualIncome),
+          operatingExpenses: Math.round(annualIncome * (expenseRate / 100)),
+          netIncome: Math.round(annualNetIncome),
+          mortgagePayment: year < mortgageYears ? Math.round(annualPayment) : 0,
+          cashflow: Math.round(annualNetIncome),
+          // נתונים נוספים
           annualNetIncome: Math.round(annualNetIncome),
           yearlyCashflow: Math.round(annualNetIncome),
           propertyYield: 0,
           equityYield: 0,
           equityPercentage: 0
-    });
+        });
       }
-  }
-  
-  // לאחר יצירת התחזית ל-30 שנה, מחק את השנה האחרונה (שנה 30)
-  if (forecast.length > 30) {
-    forecast.pop();
-  }
-  return forecast;
+    }
+    
+    // לאחר יצירת התחזית ל-30 שנה, מחק את השנה האחרונה (שנה 30)
+    if (forecast.length > 30) {
+      forecast.pop();
+    }
+    
+    console.log('generateYearlyForecast (fallback) completed - forecast length:', forecast.length);
+    console.log('generateYearlyForecast (fallback) - sample data:', forecast?.[0]);
+    console.log('generateYearlyForecast (fallback) - returning forecast:', forecast);
+    
+    return forecast;
   }
 };
 

@@ -1,3 +1,21 @@
+/**
+ * ========================================
+ * נתיבי API לניהול עסקאות (Deals Routes)
+ * ========================================
+ * 
+ * קובץ זה מגדיר את כל נתיבי ה-API הקשורים לעסקאות:
+ * - צפייה בעסקאות אישיות
+ * - יצירת עסקה חדשה
+ * - עדכון עסקה קיימת
+ * - מחיקת עסקה
+ * - ניהול תיקי לקוחות (למנהלים)
+ * 
+ * תלויות:
+ * - express: יצירת נתיבי API
+ * - mongoose: תקשורת עם MongoDB
+ * - auth middleware: אימות משתמשים
+ */
+
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -5,12 +23,43 @@ const Deal = require('../models/Deal');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 
-// Get user's own deals (for regular users)
+/**
+ * ========================================
+ * נתיבים למשתמשים רגילים
+ * ========================================
+ */
+
+/**
+ * קבלת כל העסקאות של המשתמש המחובר
+ * 
+ * @route GET /api/deals/my-deals
+ * @access Private - דורש אימות
+ * @description מחזיר רשימת כל העסקאות של המשתמש הנוכחי
+ * 
+ * @returns {Object} תגובת JSON:
+ * - success: true/false - האם הפעולה הצליחה
+ * - deals: Array - מערך של עסקאות ממוינות לפי תאריך יצירה (החדשות ראשונות)
+ * 
+ * @example תגובה מוצלחת:
+ * {
+ *   "success": true,
+ *   "deals": [
+ *     {
+ *       "_id": "...",
+ *       "address": "רחוב הרצל 1, תל אביב",
+ *       "propertyValue": 2000000,
+ *       "monthlyRent": 6000,
+ *       "createdAt": "2024-01-15T10:30:00Z"
+ *     }
+ *   ]
+ * }
+ */
 router.get('/my-deals', auth, async (req, res) => {
   try {
+    // חיפוש עסקאות לפי המייל של המשתמש המחובר
     const deals = await Deal.find({ email: req.user.email })
-      .sort({ createdAt: -1 }) // Sort by newest first (using createdAt instead of savedAt)
-      .limit(50);
+      .sort({ createdAt: -1 }) // מיון לפי תאריך יצירה - החדשות קודם
+      .limit(50); // הגבלה ל-50 עסקאות אחרונות לביצועים טובים
     
     res.json({ success: true, deals });
   } catch (error) {
@@ -19,15 +68,38 @@ router.get('/my-deals', auth, async (req, res) => {
   }
 });
 
-// Get deals for a specific client (for admins only)
+/**
+ * ========================================
+ * נתיבים למנהלים בלבד
+ * ========================================
+ */
+
+/**
+ * קבלת עסקאות של לקוח ספציפי (למנהלים בלבד)
+ * 
+ * @route GET /api/deals/client/:email
+ * @access Private/Admin - דורש אימות והרשאות מנהל
+ * @param {string} email - כתובת המייל של הלקוח (בפרמטר URL)
+ * 
+ * @description מאפשר למנהל לצפות בכל העסקאות של לקוח מסוים
+ * 
+ * @returns {Object} תגובת JSON:
+ * - success: true/false
+ * - deals: Array - עסקאות הלקוח
+ * 
+ * @security בודק שהמשתמש הוא מנהל לפני מתן גישה לנתונים
+ */
 router.get('/client/:email', auth, async (req, res) => {
   try {
-    // Check if user is admin
+    // בדיקת הרשאות - רק מנהלים יכולים לראות עסקאות של אחרים
     if (req.user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'אין הרשאה' });
     }
     
+    // פענוח המייל מה-URL (במקרה שיש תווים מיוחדים)
     const clientEmail = decodeURIComponent(req.params.email);
+    
+    // חיפוש כל העסקאות של הלקוח
     const deals = await Deal.find({ email: clientEmail })
       .sort({ createdAt: -1 })
       .limit(50);
@@ -39,33 +111,61 @@ router.get('/client/:email', auth, async (req, res) => {
   }
 });
 
-// Get all clients and their deals (for admins only)
+/**
+ * קבלת כל תיקי הלקוחות (למנהלים בלבד)
+ * 
+ * @route GET /api/deals/client-portfolios
+ * @access Private/Admin - דורש אימות והרשאות מנהל
+ * 
+ * @description מחזיר רשימה מקובצת של כל הלקוחות והעסקאות שלהם
+ * משתמש ב-MongoDB aggregation לקיבוץ יעיל של הנתונים
+ * 
+ * @returns {Object} תגובת JSON:
+ * - success: true/false
+ * - clients: Array - מערך של לקוחות עם פרטיהם ועסקאותיהם
+ * 
+ * @example תגובה:
+ * {
+ *   "success": true,
+ *   "clients": [
+ *     {
+ *       "_id": "user@example.com",
+ *       "fullName": "ישראל ישראלי",
+ *       "dealCount": 5,
+ *       "lastDealDate": "2024-01-15T10:30:00Z",
+ *       "deals": [...]
+ *     }
+ *   ]
+ * }
+ */
 router.get('/client-portfolios', auth, async (req, res) => {
   try {
-    // Check if user is admin
+    // בדיקת הרשאות מנהל
     if (req.user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'אין הרשאה' });
     }
     
-    // Get all deals grouped by user email
+    // שימוש ב-aggregation לקיבוץ עסקאות לפי משתמש
     const dealsGrouped = await Deal.aggregate([
       {
+        // קיבוץ לפי כתובת מייל
         $group: {
-          _id: '$email',
-          dealCount: { $sum: 1 },
-          lastDealDate: { $max: '$createdAt' },
-          deals: { $push: '$$ROOT' }
+          _id: '$email', // המייל הוא המזהה הייחודי
+          dealCount: { $sum: 1 }, // ספירת עסקאות
+          lastDealDate: { $max: '$createdAt' }, // תאריך העסקה האחרונה
+          deals: { $push: '$$ROOT' } // כל העסקאות של המשתמש
         }
       }
     ]);
     
-    // Get user information for each email and combine with deal data
+    // העשרת הנתונים עם פרטי המשתמש מטבלת Users
     const clientsWithUserInfo = await Promise.all(
       dealsGrouped.map(async (client) => {
+        // חיפוש פרטי המשתמש לפי המייל
         const user = await User.findOne({ email: client._id });
         return {
           _id: client._id,
-          fullName: user ? user.fullName : '',
+          fullName: user ? user.fullName : '', // שם מלא אם קיים
           dealCount: client.dealCount,
           lastDealDate: client.lastDealDate,
           deals: client.deals
@@ -73,7 +173,7 @@ router.get('/client-portfolios', auth, async (req, res) => {
       })
     );
     
-    // Sort by full name
+    // מיון לפי שם מלא (או מייל אם אין שם)
     clientsWithUserInfo.sort((a, b) => {
       const aName = (a.fullName || a._id).toLowerCase();
       const bName = (b.fullName || b._id).toLowerCase();
@@ -87,28 +187,58 @@ router.get('/client-portfolios', auth, async (req, res) => {
   }
 });
 
-// שמירת חישוב חדש
+/**
+ * ========================================
+ * יצירה ועדכון עסקאות
+ * ========================================
+ */
+
+/**
+ * יצירת עסקה חדשה
+ * 
+ * @route POST /api/deals
+ * @access Private - דורש אימות
+ * 
+ * @description שומר חישוב חדש של עסקת נדל"ן במסד הנתונים
+ * 
+ * @body {Object} נתוני העסקה:
+ * - inputs: Object - כל הנתונים שהמשתמש הזין
+ *   - address: string - כתובת הנכס (חובה)
+ *   - propertyValue: number - מחיר הנכס
+ *   - equity: number - הון עצמי
+ *   - monthlyRent: number - שכירות חודשית
+ *   - וכו'...
+ * - results: Object - תוצאות החישובים
+ *   - monthlyPayment: number - תשלום חודשי
+ *   - propertyYield: number - תשואה על הנכס
+ *   - וכו'...
+ * - forecast: Array - תחזית ל-30 שנה
+ * 
+ * @returns {Object} תגובת JSON:
+ * - success: true/false
+ * - deal: Object - העסקה שנוצרה עם ה-ID שלה
+ * - message: string - הודעת הצלחה
+ * 
+ * @validation
+ * - בודק שיש inputs ו-results
+ * - בודק שיש כתובת נכס
+ * - בודק שהכתובת בפורמט הנכון (כתובת, עיר)
+ */
 router.post('/', auth, async (req, res) => {
   try {
-    console.log('POST /api/deals - Starting save process');
-    
-    // Get user from auth middleware
+    // קבלת פרטי המשתמש מה-middleware של האימות
     const userId = req.user ? req.user.id : null;
     const userEmail = req.user ? req.user.email : null;
     
-    console.log('User info:', { userId, userEmail });
-    console.log('Request body keys:', Object.keys(req.body));
-    
-    // Validate required fields
+    // בדיקת תקינות נתונים בסיסית
     if (!req.body.inputs || !req.body.results) {
-      console.log('Missing required fields - inputs or results');
       return res.status(400).json({ 
         success: false, 
         error: 'חסרים נתונים הכרחיים' 
       });
     }
 
-    // Validate address field
+    // בדיקת שדה כתובת - חובה
     if (!req.body.inputs.address || !req.body.inputs.address.trim()) {
       return res.status(400).json({ 
         success: false, 
@@ -116,7 +246,7 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Validate address format (should contain comma)
+    // בדיקת פורמט כתובת (צריך להכיל פסיק)
     const addressParts = req.body.inputs.address.split(',');
     if (addressParts.length < 2 || !addressParts[0].trim() || !addressParts[1].trim()) {
       return res.status(400).json({ 
@@ -125,19 +255,18 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Map the data from client structure to Deal model structure
+    // פירוק הנתונים מהבקשה
     const { inputs, results, forecast } = req.body;
     
-    console.log('Inputs received:', inputs);
-    
+    // המרת נתוני הקליינט למבנה של מודל Deal
     const dealData = {
       userId,
       email: userEmail,
       address: inputs.address.trim(),
-      name: inputs.address.trim(), // Keep name for backward compatibility but use address
+      name: inputs.address.trim(), // תאימות לאחור
       propertyValue: inputs.propertyValue || 0,
       purchaseTaxRate: inputs.purchaseExpenseRate || 0,
-      lawyerFee: 0, // Not in current UI
+      lawyerFee: 0, // לא מוצג כרגע בממשק
       otherExpenses: inputs.renovationCost || 0,
       equity: inputs.equity || 0,
       annualInterestRate: inputs.annualInterestRate || 4.0,
@@ -150,13 +279,13 @@ router.post('/', auth, async (req, res) => {
       createdAt: new Date()
     };
     
-    console.log('Deal data prepared:', dealData);
-    
+    // יצירת מסמך Deal חדש
     const deal = new Deal(dealData);
+    
+    // שמירה במסד הנתונים
     const savedDeal = await deal.save();
     
-    console.log('Deal saved successfully with ID:', savedDeal._id);
-    
+    // החזרת תגובת הצלחה
     res.json({ 
       success: true, 
       deal: savedDeal,
@@ -169,15 +298,29 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// קבלת חישוב ספציפי לפי ID
+/**
+ * קבלת עסקה ספציפית לפי ID
+ * 
+ * @route GET /api/deals/:id
+ * @access Private - דורש אימות
+ * @param {string} id - מזהה העסקה (MongoDB ObjectId)
+ * 
+ * @description מחזיר את כל פרטי העסקה כולל תוצאות ותחזית
+ * 
+ * @security בודק שהמשתמש הוא בעל העסקה או מנהל
+ * 
+ * @returns {Object} העסקה המלאה או הודעת שגיאה
+ */
 router.get('/:id', auth, async (req, res) => {
   try {
+    // חיפוש העסקה לפי ID
     const deal = await Deal.findById(req.params.id);
+    
     if (!deal) {
       return res.status(404).json({ message: 'Deal not found' });
     }
     
-    // Check if user has permission to view this deal
+    // בדיקת הרשאות - רק בעל העסקה או מנהל יכולים לצפות
     if (req.user.role !== 'admin' && deal.email !== req.user.email) {
       return res.status(403).json({ success: false, error: 'אין הרשאה לצפות בעסקה זו' });
     }
@@ -189,17 +332,28 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// עדכון חישוב קיים
+/**
+ * עדכון עסקה קיימת
+ * 
+ * @route PUT /api/deals/:id
+ * @access Private - דורש אימות
+ * @param {string} id - מזהה העסקה
+ * @body {Object} updateData - הנתונים לעדכון
+ * 
+ * @description מעדכן עסקה קיימת עם נתונים חדשים
+ * 
+ * @returns {Object} העסקה המעודכנת
+ */
 router.put('/:id', async (req, res) => {
   try {
     const dealId = req.params.id;
     const updateData = req.body;
     
-    // מצא ועדכן את החישוב
+    // חיפוש ועדכון העסקה
     const updatedDeal = await Deal.findByIdAndUpdate(
       dealId,
-      { $set: updateData },
-      { new: true, runValidators: true }
+      { $set: updateData }, // עדכון רק השדות שנשלחו
+      { new: true, runValidators: true } // החזרת המסמך המעודכן + הרצת ולידציות
     );
     
     if (!updatedDeal) {
@@ -214,25 +368,61 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// מחיקת חישוב
+/**
+ * מחיקת עסקה
+ * 
+ * @route DELETE /api/deals/:id
+ * @access Private - דורש אימות
+ * @param {string} id - מזהה העסקה למחיקה
+ * 
+ * @description מוחק עסקה לצמיתות מהמסד נתונים
+ * 
+ * @returns {Object} הודעת אישור על המחיקה
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const deal = await Deal.findByIdAndDelete(req.params.id);
+    
     if (!deal) {
       return res.status(404).json({ message: 'Deal not found' });
     }
+    
     res.status(200).json({ message: 'Deal deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// חישוב תוצאות השקעה בשרת ושמירת התוצאות ב-DB
+/**
+ * ========================================
+ * חישוב בצד השרת (אופציונלי)
+ * ========================================
+ */
+
+/**
+ * חישוב תוצאות השקעה בצד השרת
+ * 
+ * @route POST /api/deals/calculate
+ * @access Public (כרגע)
+ * 
+ * @description מבצע את כל החישובים בצד השרת ושומר את התוצאות
+ * נועד לעתיד כאשר נרצה להעביר את הלוגיקה מהקליינט לשרת
+ * 
+ * @body {Object} inputData - כל נתוני הקלט לחישוב
+ * 
+ * @returns {Object} תוצאות החישוב:
+ * - success: true/false
+ * - dealId: מזהה העסקה שנוצרה
+ * - results: תוצאות החישובים
+ * - forecast: תחזית 30 שנה
+ * 
+ * @note כרגע זו גרסה בסיסית - החישובים המלאים נעשים בקליינט
+ */
 router.post('/calculate', async (req, res) => {
   try {
     const inputData = req.body;
     
-    // בדיקת תקינות הנתונים
+    // בדיקת תקינות נתוני קלט
     if (!inputData || 
         !inputData.propertyValue || 
         !inputData.equity || 
@@ -244,12 +434,12 @@ router.post('/calculate', async (req, res) => {
       });
     }
     
-    // המרת שדות הקלט למספרים
+    // המרת נתונים למספרים
     const propertyValue = parseFloat(inputData.propertyValue);
     const equity = parseFloat(inputData.equity);
     const monthlyRent = parseFloat(inputData.monthlyRent);
     const years = parseInt(inputData.years);
-    const mortgageYears = parseInt(inputData.years); // חשוב! משתמשים בנתון שהוזן ולא בקבוע
+    const mortgageYears = years; // משתמשים באותו ערך
     const annualInterestRate = parseFloat(inputData.annualInterestRate || 4.0);
     const purchaseExpenseRate = parseFloat(inputData.purchaseExpenseRate || 0);
     const renovationCost = parseFloat(inputData.renovationCost || 0);
@@ -258,16 +448,17 @@ router.post('/calculate', async (req, res) => {
     const annualAppreciationRate = parseFloat(inputData.annualAppreciationRate || 0);
     const marketValue = parseFloat(inputData.marketValue || propertyValue);
     
-    // ייבוא פונקציות החישוב
-    // בהמשך יש להעתיק את הפונקציות הרלוונטיות מהקליינט לשרת
-    // כרגע נשתמש בחישוב פשוט
+    /**
+     * פונקציה פנימית לחישוב בסיסי
+     * בעתיד תוחלף בפונקציות החישוב המלאות
+     */
     const calculateBasicResults = (inputData) => {
-      // ערכי קלט
+      // פרמטרים לחישוב
       const propertyValue = parseFloat(inputData.propertyValue);
       const equity = parseFloat(inputData.equity);
       const monthlyRent = parseFloat(inputData.monthlyRent);
       const years = parseInt(inputData.years);
-      const mortgageYears = years; // חשוב! משתמשים בטווח השנים שהמשתמש הזין
+      const mortgageYears = years;
       const annualInterestRate = parseFloat(inputData.annualInterestRate || 4.0);
       const purchaseExpenseRate = parseFloat(inputData.purchaseExpenseRate || 0);
       const renovationCost = parseFloat(inputData.renovationCost || 0);
@@ -297,7 +488,7 @@ router.post('/calculate', async (req, res) => {
       const propertyYield = (annualNetIncome / propertyValue) * 100;
       const equityYield = ((monthlyCashflow) / (totalInvestment / 12)) * 100;
       
-      // יצירת תחזית שנתית פשוטה
+      // יצירת תחזית שנתית בסיסית
       const forecast = [];
       let currentPropertyValue = propertyValue;
       let accumulatedCashflow = 0;
@@ -310,7 +501,6 @@ router.post('/calculate', async (req, res) => {
           remainingLoan = mortgageAmount * Math.pow(1 + monthlyRate, monthsPassed) - 
                          (monthlyPayment * (Math.pow(1 + monthlyRate, monthsPassed) - 1) / monthlyRate);
           
-          // לא לאפשר יתרה שלילית או לא הגיונית
           if (remainingLoan <= 0 || isNaN(remainingLoan)) {
             remainingLoan = null;
           } else {
@@ -333,7 +523,7 @@ router.post('/calculate', async (req, res) => {
         // חישוב תשואה הונית
         const equityPercentage = ((equity / totalInvestment) * 100) - 100;
         
-        // הוספת רשומה לתחזית
+        // הוספת שנה לתחזית
         forecast.push({
           year,
           propertyValue: Math.round(currentPropertyValue),
@@ -350,7 +540,7 @@ router.post('/calculate', async (req, res) => {
         });
       }
       
-      // החזרת תוצאות החישוב
+      // החזרת תוצאות
       return {
         results: {
           purchaseExpenses: Math.round(purchaseExpenses),
@@ -371,16 +561,16 @@ router.post('/calculate', async (req, res) => {
       };
     };
     
-    // לבינתיים, ניצור אובייקט דמה עם התוצאות
+    // ביצוע החישוב
     const results = calculateBasicResults(inputData);
     
-    // יצירת מסמך חדש ב-DB
+    // יצירת נתוני העסקה לשמירה
     const dealData = {
       address: inputData.address || `נכס ${new Date().toLocaleDateString('he-IL')}`,
       name: inputData.address || `חישוב ${new Date().toLocaleDateString('he-IL')}`,
       propertyValue,
       purchaseTaxRate: purchaseExpenseRate,
-      lawyerFee: 0, // לא מוזן בממשק הנוכחי
+      lawyerFee: 0,
       otherExpenses: renovationCost,
       equity,
       annualInterestRate,
@@ -392,11 +582,11 @@ router.post('/calculate', async (req, res) => {
       forecast: results.forecast
     };
     
-    // שמירה ב-DB
+    // שמירה במסד נתונים
     const deal = new Deal(dealData);
     const savedDeal = await deal.save();
     
-    // החזרת התשובה לקליינט
+    // החזרת התוצאות
     res.status(200).json({
       success: true,
       message: 'החישוב בוצע בהצלחה ונשמר במסד הנתונים',
@@ -428,5 +618,11 @@ router.post('/calculate', async (req, res) => {
     });
   }
 });
+
+/**
+ * ========================================
+ * ייצוא הנתיבים
+ * ========================================
+ */
 
 module.exports = router; 

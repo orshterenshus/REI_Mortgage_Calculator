@@ -190,7 +190,7 @@ const DealComparison = ({ dealIds, onBack }) => {
     labels: dealNames,
     datasets: [{
       label: 'מחיר רכישה',
-      data: deals.map(deal => deal.inputs?.purchasePrice || 0),
+      data: deals.map(deal => deal.propertyValue || 0),
       backgroundColor: colors.slice(0, deals.length),
       borderWidth: 1
     }]
@@ -270,8 +270,8 @@ const DealComparison = ({ dealIds, onBack }) => {
         {deals.map((deal, idx) => (
           <DealCard key={deal._id}>
             <h4 style={{ color: colors[idx] }}>{dealNames[idx]}</h4>
-            <p>מחיר: {formatCurrency(deal.inputs?.purchasePrice)}</p>
-            <p>שכירות חודשית: {formatCurrency(deal.inputs?.monthlyRent)}</p>
+            <p>מחיר: {formatCurrency(deal.propertyValue)}</p>
+            <p>שכירות חודשית: {formatCurrency(deal.monthlyRent)}</p>
             <p>תשואה שנתית: {deal.results?.annualReturn?.toFixed(2)}%</p>
           </DealCard>
         ))}
@@ -320,25 +320,25 @@ const DealComparison = ({ dealIds, onBack }) => {
           <tr>
             <td>מחיר רכישה</td>
             {deals.map((deal, idx) => (
-              <td key={idx}>{formatCurrency(deal.inputs?.purchasePrice)}</td>
+              <td key={idx}>{formatCurrency(deal.propertyValue)}</td>
             ))}
           </tr>
           <tr>
             <td>הון עצמי</td>
             {deals.map((deal, idx) => (
-              <td key={idx}>{formatCurrency(deal.inputs?.equity)}</td>
+              <td key={idx}>{formatCurrency(deal.equity)}</td>
             ))}
           </tr>
           <tr>
             <td>משכנתא</td>
             {deals.map((deal, idx) => (
-              <td key={idx}>{formatCurrency((deal.inputs?.purchasePrice || 0) - (deal.inputs?.equity || 0))}</td>
+              <td key={idx}>{formatCurrency((deal.propertyValue || 0) - (deal.equity || 0))}</td>
             ))}
           </tr>
           <tr>
             <td>שכירות חודשית</td>
             {deals.map((deal, idx) => (
-              <td key={idx}>{formatCurrency(deal.inputs?.monthlyRent)}</td>
+              <td key={idx}>{formatCurrency(deal.monthlyRent)}</td>
             ))}
           </tr>
           <tr>

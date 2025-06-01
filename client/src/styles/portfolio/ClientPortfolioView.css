@@ -1,0 +1,319 @@
+/**
+ * ========================================
+ * סטיילים לתצוגת תיק לקוח (ClientPortfolioView Styles)
+ * ========================================
+ * 
+ * תיאור:
+ * קובץ זה מכיל את כל הסטיילים עבור רכיב תצוגת תיק לקוח
+ */
+
+/* מיכל ראשי */
+.client-view-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* כותרת עם כפתור חזרה */
+.view-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #333;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+}
+
+.back-button:hover {
+  color: var(--primary);
+  background-color: #f5f5f5;
+}
+
+/* מידע לקוח */
+.client-info {
+  flex: 1;
+}
+
+.client-info h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.client-info .email {
+  color: #666;
+  font-size: 1rem;
+  margin-top: 0.25rem;
+}
+
+/* מידע על הלקוח */
+.client-info h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.client-info p {
+  margin: 0;
+  color: #666;
+}
+
+.client-info .active-label {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* כרטיס סיכום */
+.summary-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card h2 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+/* רשת סטטיסטיקות */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+}
+
+.stat-item .label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.stat-item .value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-item .value.positive {
+  color: #27ae60;
+}
+
+.stat-item .value.negative {
+  color: #e74c3c;
+}
+
+/* סעיף עסקאות */
+.deals-section {
+  margin-top: 2rem;
+}
+
+.section-title {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.count-badge {
+  background-color: #f5f5f5;
+  color: #333;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+/* רשת עסקאות */
+.deals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* כרטיס עסקה */
+.deal-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.deal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary);
+}
+
+/* כותרת עסקה */
+.deal-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.deal-title {
+  margin: 0;
+  color: #333;
+  font-size: 1.1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  order: -1;
+}
+
+.delete-button:hover {
+  background-color: #ffebee;
+  transform: scale(1.1);
+}
+
+/* פרטי עסקה */
+.deal-details {
+  margin-bottom: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.detail-row .label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.detail-row .value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+/* תאריך עסקה */
+.deal-date {
+  font-size: 0.75rem;
+  color: #666;
+  text-align: right;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+/* מצב ריק */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-state h3 {
+  color: #666;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.empty-state p {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* אנימציית טעינה */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #eee;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* הודעת שגיאה */
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* רספונסיב */
+@media (max-width: 768px) {
+  .client-view-container {
+    padding: 1rem;
+  }
+  
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .client-info h1 {
+    font-size: 1.5rem;
+  }
+  
+  .summary-card {
+    padding: 1.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .stat-item .value {
+    font-size: 1.4rem;
+  }
+  
+  .deals-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .deal-card {
+    padding: 1rem;
+  }
+} 

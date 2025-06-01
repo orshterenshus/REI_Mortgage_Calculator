@@ -1,0 +1,160 @@
+/**
+ * ========================================
+ * סטיילים לטבלת תחזית (ForecastTable Styles)
+ * ========================================
+ * 
+ * תיאור:
+ * קובץ זה מכיל את כל הסטיילים עבור טבלת התחזית השנתית
+ */
+
+/* מיכל ראשי */
+.forecast-container {
+  margin-top: 2rem;
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* כותרת */
+.forecast-title {
+  font-size: 1.5rem;
+  color: var(--primary);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* מעטפת הטבלה - לגלילה אופקית */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* הטבלה */
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+/* כותרות עמודות */
+.forecast-table thead th {
+  background-color: #f5f5f5;
+  color: #333;
+  font-weight: 600;
+  padding: 0.75rem;
+  text-align: right;
+  border-bottom: 2px solid #ddd;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* תאי הטבלה */
+.forecast-table tbody td {
+  padding: 0.625rem;
+  text-align: right;
+  border-bottom: 1px solid #eee;
+}
+
+/* שורות זוגיות */
+.forecast-table tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* שורות בהובר */
+.forecast-table tbody tr:hover {
+  background-color: #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+/* תא השנה */
+.year-cell {
+  font-weight: 600;
+  color: #555;
+}
+
+/* ערכים חיוביים */
+.positive {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ערכים שליליים */
+.negative {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+/* הודעת ריקות */
+.empty-forecast {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* הרווח חיובי */
+th.profit-positive {
+  color: var(--primary);
+}
+
+/* רספונסיב - מסכים קטנים */
+@media (max-width: 768px) {
+  .forecast-container {
+    padding: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .forecast-title {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .forecast-table thead th,
+  .forecast-table tbody td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  /* אינדיקציה לגלילה */
+  .table-wrapper {
+    position: relative;
+  }
+  
+  .table-wrapper::after {
+    content: '←';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.5rem;
+    font-size: 1.5rem;
+    color: #999;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s;
+  }
+  
+  .table-wrapper:hover::after {
+    opacity: 0.5;
+  }
+}
+
+/* הדפסה */
+@media print {
+  .forecast-container {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .forecast-table {
+    font-size: 10pt;
+  }
+  
+  .forecast-table tbody tr:nth-child(even) {
+    background-color: #f5f5f5;
+  }
+} 

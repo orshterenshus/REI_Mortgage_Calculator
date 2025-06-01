@@ -1,0 +1,189 @@
+/**
+ * ========================================
+ * סטיילים לרכיב הרשמה (Register Styles)
+ * ========================================
+ * 
+ * תיאור:
+ * קובץ זה מכיל את כל הסטיילים עבור רכיב ההרשמה
+ * כולל עיצוב הטופס, כפתורים, שגיאות והודעות
+ */
+
+/* מיכל ראשי */
+.register-container {
+  max-width: 400px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* כותרת */
+.register-title {
+  text-align: center;
+  color: #333;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+/* טופס */
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* קבוצת שדה */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* תווית */
+.form-label {
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* שדה קלט */
+.form-input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
+}
+
+.form-input.error {
+  border-color: #dc3545;
+}
+
+.form-input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.form-input::placeholder {
+  color: #999;
+}
+
+/* הודעות עזרה/שגיאה לשדה */
+.field-help {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.field-help.error {
+  color: #dc3545;
+}
+
+/* כפתור שליחה */
+.submit-button {
+  background-color: var(--primary);
+  color: white;
+  padding: 0.875rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
+}
+
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* הודעת שגיאה כללית */
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* הודעת הצלחה */
+.success-message {
+  background-color: #e6f4ea;
+  color: #1e7e34;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* קישור למעבר להתחברות */
+.switch-link {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+}
+
+.switch-link a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.switch-link a:hover {
+  text-decoration: underline;
+}
+
+/* אנימציית טעינה */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-left: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* רספונסיב */
+@media (max-width: 768px) {
+  .register-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .register-title {
+    font-size: 1.5rem;
+  }
+  
+  .register-form {
+    gap: 1.25rem;
+  }
+} 

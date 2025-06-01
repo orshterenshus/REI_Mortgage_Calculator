@@ -1,6 +1,22 @@
+/**
+ * ========================================
+ * רכיב גרף שווי נכס (PropertyValueChart Component)
+ * ========================================
+ * 
+ * תיאור:
+ * רכיב זה מציג גרף של שווי הנכס, יתרת המשכנתא וההון העצמי לאורך השנים
+ * 
+ * תלויות:
+ * - React: ספריית ה-UI
+ * - react-chartjs-2: ספריית הגרפים
+ * - CSS: לעיצוב הרכיב
+ * 
+ * Props:
+ * - forecast: Array - מערך אובייקטי התחזית השנתית
+ */
+
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
-import styled from '@emotion/styled';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,7 +28,9 @@ import {
   LineElement,
   PointElement
 } from 'chart.js';
+import '../../styles/charts/PropertyValueChart.css';
 
+// רישום רכיבי Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -24,19 +42,23 @@ ChartJS.register(
   Legend
 );
 
-const ChartContainer = styled.div`
-  margin-bottom: 2rem;
-`;
-
+/**
+ * ========================================
+ * רכיב גרף שווי הנכס
+ * ========================================
+ */
 const PropertyValueChart = ({ forecast }) => {
+  // בדיקת תקינות נתונים
   if (!forecast || !forecast.length) return null;
 
+  // הכנת נתונים לגרף
   const labels = forecast.map((item) => `שנה ${item.year}`);
   const propertyValues = forecast.map((item) => item.propertyValue);
   const marketValues = forecast.map((item) => item.marketValue);
   const loanValues = forecast.map((item) => item.remainingLoan);
   const equityValues = forecast.map((item) => item.equity);
 
+  // הגדרות הגרף
   const options = {
     plugins: {
       title: {
@@ -44,19 +66,35 @@ const PropertyValueChart = ({ forecast }) => {
         text: 'שווי נכס מול יתרת משכנתה והון עצמי',
         font: {
           size: 16,
+          family: 'Arial, sans-serif',
+          weight: 'bold'
         },
+        color: '#333'
       },
       legend: {
         position: 'top',
         labels: {
           font: {
             size: 12,
+            family: 'Arial, sans-serif'
           },
+          color: '#333',
+          padding: 15
         },
       },
       tooltip: {
         mode: 'index',
         intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: {
+          size: 14,
+          family: 'Arial, sans-serif'
+        },
+        bodyFont: {
+          size: 12,
+          family: 'Arial, sans-serif'
+        },
+        rtl: true
       },
     },
     responsive: true,
@@ -64,14 +102,38 @@ const PropertyValueChart = ({ forecast }) => {
     scales: {
       x: {
         stacked: true,
+        grid: {
+          display: false
+        },
+        ticks: {
+          font: {
+            size: 11,
+            family: 'Arial, sans-serif'
+          },
+          color: '#666'
+        }
       },
       y: {
         stacked: false,
         beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)'
+        },
+        ticks: {
+          font: {
+            size: 11,
+            family: 'Arial, sans-serif'
+          },
+          color: '#666',
+          callback: function(value) {
+            return '₪' + value.toLocaleString('he-IL');
+          }
+        }
       },
     },
   };
 
+  // נתוני הגרף
   const data = {
     labels,
     datasets: [
@@ -116,12 +178,17 @@ const PropertyValueChart = ({ forecast }) => {
   };
 
   return (
-    <ChartContainer className="card">
-      <div className="chart-container">
+    <div className="property-chart-container">
+      <div className="chart-wrapper">
         <Bar options={options} data={data} />
       </div>
-    </ChartContainer>
+    </div>
   );
 };
 
+/**
+ * ========================================
+ * ייצוא הרכיב
+ * ========================================
+ */
 export default PropertyValueChart; 

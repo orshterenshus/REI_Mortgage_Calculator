@@ -1001,7 +1001,11 @@ const AppInner = () => {
                   <ProfitChart forecast={forecast} results={results} />
                 </div>
                 
-                <ForecastTable forecast={forecast} years={inputs.years} />
+                <ForecastTable 
+                  forecast={forecast} 
+                  years={inputs.years}
+                  totalInvestment={results?.totalInvestment}
+                />
               </>
             )}
           </div>

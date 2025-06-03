@@ -93,7 +93,11 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
     totalLoansBalance: 0,
     totalEquity: 0,
     totalMonthlyRent: 0,
-    averageLTV: 0
+    averageLTV: 0,
+    totalPropertyAppreciation: 0,
+    totalGrossCashflow: 0,
+    totalMortgageCost: 0,
+    occupancyLevel: 0
   });
 
   /**
@@ -140,7 +144,11 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
         totalLoansBalance: 0,
         totalEquity: 0,
         totalMonthlyRent: 0,
-        averageLTV: 0
+        averageLTV: 0,
+        totalPropertyAppreciation: 0,
+        totalGrossCashflow: 0,
+        totalMortgageCost: 0,
+        occupancyLevel: 0
       });
       return;
     }
@@ -162,13 +170,49 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
     // חישוב LTV ממוצע
     const averageLTV = totalPropertyValue > 0 ? (totalLoansBalance / totalPropertyValue) * 100 : 0;
 
+    // חישוב השבחה כוללת (בהנחה של השבחה של 3% שנתית)
+    const totalPropertyAppreciation = dealsData.reduce((sum, deal) => {
+      const annualAppreciation = (deal.propertyValue || 0) * ((deal.annualAppreciationRate || 3) / 100);
+      return sum + annualAppreciation;
+    }, 0);
+
+    // חישוב תזרים מזומנים גולמי (הכנסות פחות הוצאות חודשיות)
+    const totalGrossCashflow = dealsData.reduce((sum, deal) => {
+      const monthlyRent = deal.monthlyRent || 0;
+      const monthlyExpenses = monthlyRent * ((deal.expenseRate || 10) / 100 / 12);
+      return sum + (monthlyRent - monthlyExpenses);
+    }, 0);
+
+    // חישוב עלות משכנתא חודשית (הערכה בהנחה של 4% ריבית ו-25 שנים)
+    const totalMortgageCost = dealsData.reduce((sum, deal) => {
+      const loanAmount = (deal.propertyValue || 0) - (deal.equity || 0);
+      if (loanAmount <= 0) return sum;
+      
+      const monthlyRate = 0.04 / 12; // 4% שנתי חלקי 12
+      const numPayments = 25 * 12; // 25 שנים כפול 12 חודשים
+      
+      if (monthlyRate > 0) {
+        const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                              (Math.pow(1 + monthlyRate, numPayments) - 1);
+        return sum + monthlyPayment;
+      }
+      return sum;
+    }, 0);
+
+    // חישוב אחוז תפוסה (בהנחה של 95% תפוסה)
+    const occupancyLevel = 95; // ברירת מחדל
+
     setStats({
       totalDeals,
       totalPropertyValue,
       totalLoansBalance,
       totalEquity,
       totalMonthlyRent,
-      averageLTV
+      averageLTV,
+      totalPropertyAppreciation,
+      totalGrossCashflow,
+      totalMortgageCost,
+      occupancyLevel
     });
   };
 
@@ -330,7 +374,7 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
       {/* סיכום התיק */}
       {deals.length > 0 && (
         <div className="portfolio-summary">
-          <h3 className="summary-title">סיכום התיק שלי</h3>
+          <h3 className="summary-title">סיכום התיק</h3>
           <div className="summary-grid">
             <div className="summary-item">
               <div className="summary-label">מספר נכסים</div>
@@ -353,13 +397,33 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
             </div>
             
             <div className="summary-item">
-              <div className="summary-label">הכנסה חודשית</div>
-              <div className="summary-value">{formatCurrency(stats.totalMonthlyRent)}/חודש</div>
+              <div className="summary-label">השבחה שנתית</div>
+              <div className="summary-value">{formatCurrency(stats.totalPropertyAppreciation)}</div>
             </div>
             
             <div className="summary-item">
               <div className="summary-label">Portfolio LTV</div>
               <div className="summary-value">{formatPercentage(stats.averageLTV)}</div>
+            </div>
+            
+            <div className="summary-item">
+              <div className="summary-label">הכנסה משכירות</div>
+              <div className="summary-value">{formatCurrency(stats.totalMonthlyRent)}/חודש</div>
+            </div>
+            
+            <div className="summary-item">
+              <div className="summary-label">עלות משכנתא</div>
+              <div className="summary-value">{formatCurrency(stats.totalMortgageCost)}/חודש</div>
+            </div>
+            
+            <div className="summary-item">
+              <div className="summary-label">תזרים גולמי</div>
+              <div className="summary-value">{formatCurrency(stats.totalGrossCashflow)}/חודש</div>
+            </div>
+            
+            <div className="summary-item">
+              <div className="summary-label">אחוז תפוסה</div>
+              <div className="summary-value">{formatPercentage(stats.occupancyLevel)}</div>
             </div>
           </div>
         </div>

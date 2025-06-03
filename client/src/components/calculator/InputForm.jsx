@@ -67,6 +67,88 @@ const Button = styled.button`
 `;
 
 /**
+ * מיכל שדה עם סמל מטבע
+ */
+const CurrencyInputContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  
+  input {
+    padding-right: 40px !important;
+    text-align: left;
+    direction: ltr;
+  }
+  
+  &::after {
+    content: '₪';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1;
+  }
+`;
+
+/**
+ * מיכל שדה עם סמל אחוז
+ */
+const PercentageInputContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  
+  input {
+    padding-right: 30px !important;
+    text-align: left;
+    direction: ltr;
+  }
+  
+  &::after {
+    content: '%';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1;
+  }
+`;
+
+/**
+ * ========================================
+ * פונקציות עזר לפורמט מספרים
+ * ========================================
+ */
+
+/**
+ * פורמט מספר עם פסיקים לפרידת אלפים
+ * @param {number|string} value - הערך לפורמט
+ * @returns {string} - הערך מפורמט עם פסיקים
+ */
+const formatNumberWithCommas = (value) => {
+  if (!value && value !== 0) return '';
+  const numValue = typeof value === 'string' ? value.replace(/,/g, '') : value;
+  return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+/**
+ * הסרת פסיקים ממספר והמרה למספר
+ * @param {string} value - הערך עם פסיקים
+ * @returns {number} - המספר ללא פסיקים
+ */
+const parseNumberFromCommas = (value) => {
+  if (!value) return '';
+  const cleanValue = value.toString().replace(/,/g, '');
+  return cleanValue === '' ? '' : parseFloat(cleanValue);
+};
+
+/**
  * ========================================
  * רכיב הטופס הראשי
  * ========================================
@@ -88,6 +170,41 @@ const InputForm = ({ inputs, setInputs, onCalculate, onSave, onClear, isCalculat
     setInputs({
       ...inputs,
       [name]: value === '' ? '' : parseFloat(value),
+    });
+  };
+
+  /**
+   * טיפול בשינוי ערך של שדה כסף עם פורמט פסיקים
+   * @param {Event} e - אירוע השינוי
+   */
+  const handleCurrencyChange = (e) => {
+    const { name, value } = e.target;
+    const numericValue = parseNumberFromCommas(value);
+    setInputs({
+      ...inputs,
+      [name]: numericValue,
+    });
+  };
+
+  /**
+   * טיפול בשינוי ערך של שדה אחוזים
+   * @param {Event} e - אירוע השינוי
+   */
+  const handlePercentageChange = (e) => {
+    const { name, value } = e.target;
+    // אפשר רק מספרים ונקודה עשרונית
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    
+    // בדיקה שיש רק נקודה עשרונית אחת
+    const dotCount = (numericValue.match(/\./g) || []).length;
+    let finalValue = numericValue;
+    if (dotCount > 1) {
+      finalValue = numericValue.substring(0, numericValue.lastIndexOf('.'));
+    }
+    
+    setInputs({
+      ...inputs,
+      [name]: finalValue === '' ? '' : parseFloat(finalValue) || 0,
     });
   };
 
@@ -187,169 +304,178 @@ const InputForm = ({ inputs, setInputs, onCalculate, onSave, onClear, isCalculat
           {/* סכום הרכישה - מחיר הנכס */}
           <div className="form-group">
             <label htmlFor="propertyValue">סכום הרכישה</label>
-            <input
-              type="number"
-              id="propertyValue"
-              name="propertyValue"
-              className="form-control"
-              value={inputs.propertyValue ?? ''}
-              onChange={handleChange}
-              min="0"
-              step="10000"
-              required
-              disabled={isCalculating}
-            />
+            <CurrencyInputContainer>
+              <input
+                type="text"
+                id="propertyValue"
+                name="propertyValue"
+                className="form-control"
+                value={formatNumberWithCommas(inputs.propertyValue)}
+                onChange={handleCurrencyChange}
+                required
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </CurrencyInputContainer>
           </div>
           
           {/* אחוז הוצאות רכישה - עמלות, מיסים וכו' */}
           <div className="form-group">
             <label htmlFor="purchaseExpenseRate">אחוז הוצאות רכישה</label>
-            <input
-              type="number"
-              id="purchaseExpenseRate"
-              name="purchaseExpenseRate"
-              className="form-control"
-              value={inputs.purchaseExpenseRate ?? ''}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              step="0.1"
-              disabled={isCalculating}
-            />
+            <PercentageInputContainer>
+              <input
+                type="text"
+                id="purchaseExpenseRate"
+                name="purchaseExpenseRate"
+                className="form-control"
+                value={inputs.purchaseExpenseRate ?? ''}
+                onChange={handlePercentageChange}
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </PercentageInputContainer>
           </div>
           
           {/* הון עצמי - כמה כסף המשקיע משקיע מכיסו */}
           <div className="form-group">
             <label htmlFor="equity">הון עצמי</label>
-            <input
-              type="number"
-              id="equity"
-              name="equity"
-              className="form-control"
-              value={inputs.equity ?? ''}
-              onChange={handleChange}
-              min="0"
-              step="10000"
-              required
-              disabled={isCalculating}
-            />
+            <CurrencyInputContainer>
+              <input
+                type="text"
+                id="equity"
+                name="equity"
+                className="form-control"
+                value={formatNumberWithCommas(inputs.equity)}
+                onChange={handleCurrencyChange}
+                required
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </CurrencyInputContainer>
           </div>
           
           {/* השקעה בנכס - שיפוצים וכו' */}
           <div className="form-group">
             <label htmlFor="renovationCost">השקעה בנכס</label>
-            <input
-              type="number"
-              id="renovationCost"
-              name="renovationCost"
-              className="form-control"
-              value={inputs.renovationCost ?? ''}
-              onChange={handleChange}
-              min="0"
-              step="5000"
-              disabled={isCalculating}
-            />
+            <CurrencyInputContainer>
+              <input
+                type="text"
+                id="renovationCost"
+                name="renovationCost"
+                className="form-control"
+                value={formatNumberWithCommas(inputs.renovationCost)}
+                onChange={handleCurrencyChange}
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </CurrencyInputContainer>
           </div>
           
           {/* מס רכישה - סכום קבוע */}
           <div className="form-group">
             <label htmlFor="purchaseTax">מס רכישה</label>
-            <input
-              type="number"
-              id="purchaseTax"
-              name="purchaseTax"
-              className="form-control"
-              value={inputs.purchaseTax ?? ''}
-              onChange={handleChange}
-              min="0"
-              step="1000"
-              disabled={isCalculating}
-            />
+            <CurrencyInputContainer>
+              <input
+                type="text"
+                id="purchaseTax"
+                name="purchaseTax"
+                className="form-control"
+                value={formatNumberWithCommas(inputs.purchaseTax)}
+                onChange={handleCurrencyChange}
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </CurrencyInputContainer>
           </div>
           
           {/* טווח שנים - תקופת ההשקעה/משכנתא */}
           <div className="form-group">
             <label htmlFor="years">טווח שנים</label>
-            <input
-              type="number"
+            <select
               id="years"
               name="years"
               className="form-control"
               value={inputs.years ?? ''}
               onChange={handleChange}
-              min="1"
-              max="50"
-              step="1"
               required
               disabled={isCalculating}
-            />
+            >
+              <option value="">בחר טווח שנים</option>
+              <option value={10}>10 שנים</option>
+              <option value={15}>15 שנים</option>
+              <option value={20}>20 שנים</option>
+              <option value={25}>25 שנים</option>
+              <option value={30}>30 שנים</option>
+            </select>
           </div>
           
           {/* מחיר שוק - ערך שוק נוכחי של הנכס */}
           <div className="form-group">
             <label htmlFor="marketValue">מחיר שוק</label>
-            <input
-              type="number"
-              id="marketValue"
-              name="marketValue"
-              className="form-control"
-              value={inputs.marketValue ?? ''}
-              onChange={handleChange}
-              min="0"
-              step="10000"
-              disabled={isCalculating}
-            />
+            <CurrencyInputContainer>
+              <input
+                type="text"
+                id="marketValue"
+                name="marketValue"
+                className="form-control"
+                value={formatNumberWithCommas(inputs.marketValue)}
+                onChange={handleCurrencyChange}
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </CurrencyInputContainer>
           </div>
           
           {/* אחוז השבחה שנתי - כמה הנכס צפוי לעלות בערך */}
           <div className="form-group">
             <label htmlFor="annualAppreciationRate">אחוז השבחה שנתי</label>
-            <input
-              type="number"
-              id="annualAppreciationRate"
-              name="annualAppreciationRate"
-              className="form-control"
-              value={inputs.annualAppreciationRate ?? ''}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              step="0.1"
-              disabled={isCalculating}
-            />
+            <PercentageInputContainer>
+              <input
+                type="text"
+                id="annualAppreciationRate"
+                name="annualAppreciationRate"
+                className="form-control"
+                value={inputs.annualAppreciationRate ?? ''}
+                onChange={handlePercentageChange}
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </PercentageInputContainer>
           </div>
           
           {/* הכנסה משכירות חודשית */}
           <div className="form-group">
             <label htmlFor="monthlyRent">הכנסה משכירות חודשית</label>
-            <input
-              type="number"
-              id="monthlyRent"
-              name="monthlyRent"
-              className="form-control"
-              value={inputs.monthlyRent ?? ''}
-              onChange={handleChange}
-              min="0"
-              step="100"
-              required
-              disabled={isCalculating}
-            />
+            <CurrencyInputContainer>
+              <input
+                type="text"
+                id="monthlyRent"
+                name="monthlyRent"
+                className="form-control"
+                value={formatNumberWithCommas(inputs.monthlyRent)}
+                onChange={handleCurrencyChange}
+                required
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </CurrencyInputContainer>
           </div>
           
           {/* אחוז הוצאה שנתית - תחזוקה, ניהול וכו' */}
           <div className="form-group">
             <label htmlFor="expenseRate">אחוז הוצאה שנתית</label>
-            <input
-              type="number"
-              id="expenseRate"
-              name="expenseRate"
-              className="form-control"
-              value={inputs.expenseRate ?? ''}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              step="0.5"
-              disabled={isCalculating}
-            />
+            <PercentageInputContainer>
+              <input
+                type="text"
+                id="expenseRate"
+                name="expenseRate"
+                className="form-control"
+                value={inputs.expenseRate ?? ''}
+                onChange={handlePercentageChange}
+                disabled={isCalculating}
+                placeholder="0"
+              />
+            </PercentageInputContainer>
           </div>
         </div>
         

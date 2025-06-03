@@ -5,7 +5,7 @@
  * 
  * תיאור:
  * רכיב זה מציג טבלת תחזית שנתית לעסקת נדל"ן
- * כולל נתונים על הכנסות, הוצאות, תזרים ותשואה לאורך השנים
+ * כולל נתונים על ערך נכס, תשואה הונית, הון עצמי ויתרת הלוואה
  * 
  * תלויות:
  * - React: ספריית ה-UI
@@ -14,6 +14,7 @@
  * Props:
  * - forecast: Array - מערך אובייקטי התחזית השנתית
  * - years: Number - מספר שנות המשכנתא
+ * - totalInvestment: Number - ההשקעה הכוללת
  */
 
 import React from 'react';
@@ -38,14 +39,44 @@ const formatCurrency = (value) => {
 };
 
 /**
+ * חישוב תשואה הונית
+ * תשואה הונית = ((הון עצמי - סך השקעה) / סך השקעה) * 100
+ * @param {number} totalInvestment - סך ההשקעה הראשוני
+ * @param {number} currentEquity - הון עצמי נוכחי
+ * @returns {number} - תשואה הונית באחוזים
+ */
+const calculateEquityReturn = (totalInvestment, currentEquity) => {
+  if (!totalInvestment || totalInvestment <= 0) return 0;
+  
+  // נוסחה: (הון עצמי - סך השקעה) / סך השקעה * 100
+  const equityGain = (currentEquity || 0) - totalInvestment;
+  return (equityGain / totalInvestment) * 100;
+};
+
+/**
+ * פורמט אחוזים
+ * @param {number} value - הערך באחוזים
+ * @returns {string} - הערך מפורמט באחוזים
+ */
+const formatPercentage = (value) => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return '0.00%';
+  }
+  return `${value.toFixed(2)}%`;
+};
+
+/**
  * ========================================
  * רכיב טבלת התחזית
  * ========================================
  */
-const ForecastTable = ({ forecast, years }) => {
+const ForecastTable = ({ forecast, years, totalInvestment }) => {
   if (!forecast || forecast.length === 0) {
     return <div className="empty-forecast">אין נתוני תחזית להצגה</div>;
   }
+
+  // השתמש בהשקעה הכוללת שהועברה כפרופס, או נסה לקחת מהשנה הראשונה
+  const initialInvestment = totalInvestment || forecast[0]?.equity || 0;
 
   return (
     <div className="forecast-container">
@@ -55,32 +86,28 @@ const ForecastTable = ({ forecast, years }) => {
           <thead>
             <tr>
               <th>שנה</th>
-              <th>ערך נכס</th>
-              <th>הכנסה שנתית</th>
-              <th>הוצאות תפעול</th>
-              <th>הכנסה נטו</th>
-              <th>החזר משכנתא</th>
-              <th>תזרים שנתי</th>
-              <th>תשואה להון</th>
+              <th>שווי נכס</th>
+              <th>יתרת הלוואה</th>
+              <th>הון עצמי</th>
+              <th>תשואה הונית</th>
             </tr>
           </thead>
           <tbody>
-            {forecast.map((year) => (
-              <tr key={year.year}>
-                <td className="year-cell">{year.year}</td>
-                <td>{formatCurrency(year.propertyValue)}</td>
-                <td>{formatCurrency(year.annualIncome)}</td>
-                <td>{formatCurrency(year.operatingExpenses)}</td>
-                <td>{formatCurrency(year.netIncome)}</td>
-                <td>{formatCurrency(year.mortgagePayment)}</td>
-                <td className={year.cashflow != null && year.cashflow >= 0 ? 'positive' : 'negative'}>
-                  {formatCurrency(year.cashflow)}
-                </td>
-                <td className={year.equityYield != null && year.equityYield >= 0 ? 'positive' : 'negative'}>
-                  {year.equityYield != null ? year.equityYield.toFixed(2) + '%' : '0.00%'}
-                </td>
-              </tr>
-            ))}
+            {forecast.map((year) => {
+              const equityReturn = calculateEquityReturn(initialInvestment, year.equity || 0);
+              
+              return (
+                <tr key={year.year}>
+                  <td className="year-cell">{year.year}</td>
+                  <td>{formatCurrency(year.propertyValue)}</td>
+                  <td>{year.remainingLoan && year.remainingLoan > 0 ? formatCurrency(year.remainingLoan) : '-'}</td>
+                  <td>{formatCurrency(year.equity || 0)}</td>
+                  <td className={equityReturn >= 0 ? 'equity-profit' : 'equity-loss'}>
+                    {formatPercentage(equityReturn)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

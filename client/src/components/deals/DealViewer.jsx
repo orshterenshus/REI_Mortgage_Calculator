@@ -263,7 +263,11 @@ const DealViewer = ({ deal, onBack, onBackToPortfolio, userRole, clientEmail }) 
                 <ProfitChart forecast={deal.forecast} results={deal.results} />
               </ChartsGrid>
               
-              <ForecastTable forecast={deal.forecast} years={inputs.years} />
+              <ForecastTable 
+                forecast={deal.forecast} 
+                years={inputs.years}
+                totalInvestment={deal.results?.totalInvestment}
+              />
             </>
           )}
         </>

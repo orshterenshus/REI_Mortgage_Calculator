@@ -114,18 +114,22 @@ const MetricsTable = styled.table`
 `;
 
 const BackButton = styled.button`
-  background-color: var(--secondary);
+  background-color: var(--primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   
   &:hover {
-    background-color: var(--secondary-dark);
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
   }
 `;
 
@@ -262,7 +266,7 @@ const DealComparison = ({ dealIds, onBack }) => {
 
   return (
     <ComparisonContainer>
-      <BackButton onClick={onBack}>חזרה לתיק</BackButton>
+      <BackButton onClick={onBack}>← חזרה לתיק</BackButton>
       
       <PageTitle>השוואת {deals.length} עסקאות</PageTitle>
       

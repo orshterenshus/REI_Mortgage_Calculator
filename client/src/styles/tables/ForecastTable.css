@@ -35,7 +35,7 @@
 .forecast-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  min-width: 600px;
 }
 
 /* כותרות עמודות */
@@ -85,6 +85,18 @@
 .negative {
   color: #d32f2f;
   font-weight: 500;
+}
+
+/* תשואה הונית - רווח */
+.equity-profit {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+/* תשואה הונית - הפסד */
+.equity-loss {
+  color: #e74c3c;
+  font-weight: 600;
 }
 
 /* הודעת ריקות */

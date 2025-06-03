@@ -78,10 +78,61 @@ const formatDate = (dateString) => {
  * @returns {Object} אובייקט סטטיסטיקות
  */
 const calculateStats = (deals) => {
+  if (!deals || deals.length === 0) {
+    return {
+      totalDeals: 0,
+      totalInvestment: 0,
+      totalPropertyValue: 0,
+      totalLoansBalance: 0,
+      totalMonthlyRent: 0,
+      averageYield: 0,
+      totalPropertyAppreciation: 0,
+      averageLTV: 0,
+      totalGrossCashflow: 0,
+      totalMortgageCost: 0,
+      occupancyLevel: 0
+    };
+  }
+
   const totalDeals = deals.length;
   const totalInvestment = deals.reduce((sum, deal) => sum + (deal.equity || 0), 0);
   const totalPropertyValue = deals.reduce((sum, deal) => sum + (deal.propertyValue || 0), 0);
   const totalMonthlyRent = deals.reduce((sum, deal) => sum + (deal.monthlyRent || 0), 0);
+
+  // חישוב יתרת הלוואות
+  const totalLoansBalance = totalPropertyValue - totalInvestment;
+
+  // חישוב LTV ממוצע
+  const averageLTV = totalPropertyValue > 0 ? (totalLoansBalance / totalPropertyValue) * 100 : 0;
+
+  // חישוב השבחה כוללת
+  const totalPropertyAppreciation = deals.reduce((sum, deal) => {
+    const annualAppreciation = (deal.propertyValue || 0) * ((deal.annualAppreciationRate || 3) / 100);
+    return sum + annualAppreciation;
+  }, 0);
+
+  // חישוב תזרים מזומנים גולמי
+  const totalGrossCashflow = deals.reduce((sum, deal) => {
+    const monthlyRent = deal.monthlyRent || 0;
+    const monthlyExpenses = monthlyRent * ((deal.expenseRate || 10) / 100 / 12);
+    return sum + (monthlyRent - monthlyExpenses);
+  }, 0);
+
+  // חישוב עלות משכנתא חודשית
+  const totalMortgageCost = deals.reduce((sum, deal) => {
+    const loanAmount = (deal.propertyValue || 0) - (deal.equity || 0);
+    if (loanAmount <= 0) return sum;
+    
+    const monthlyRate = 0.04 / 12;
+    const numPayments = 25 * 12;
+    
+    if (monthlyRate > 0) {
+      const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                            (Math.pow(1 + monthlyRate, numPayments) - 1);
+      return sum + monthlyPayment;
+    }
+    return sum;
+  }, 0);
 
   const dealsWithYield = deals.filter(deal => 
     deal.results && 
@@ -93,12 +144,20 @@ const calculateStats = (deals) => {
     ? dealsWithYield.reduce((sum, deal) => sum + deal.results.equityYield, 0) / dealsWithYield.length
     : 0;
 
+  const occupancyLevel = 95; // ברירת מחדל
+
   return {
     totalDeals,
     totalInvestment,
     totalPropertyValue,
+    totalLoansBalance,
     totalMonthlyRent,
-    averageYield
+    averageYield,
+    totalPropertyAppreciation,
+    averageLTV,
+    totalGrossCashflow,
+    totalMortgageCost,
+    occupancyLevel
   };
 };
 
@@ -233,7 +292,7 @@ const ClientPortfolioView = ({ clientEmail, onOpenDeal, onBack }) => {
         
         <div className="client-info">
           <h1>{client?.fullName || clientEmail}</h1>
-          <div className="email">{clientEmail}</div>
+          <div className="client-email-label">כתובת מייל: <span className="email-value">{clientEmail}</span></div>
         </div>
       </div>
 
@@ -241,30 +300,53 @@ const ClientPortfolioView = ({ clientEmail, onOpenDeal, onBack }) => {
         <h2>סיכום תיק</h2>
         <div className="stats-grid">
           <div className="stat-item">
-            <div className="label">מספר עסקאות</div>
+            <div className="label">מספר נכסים</div>
             <div className="value">{stats.totalDeals}</div>
           </div>
           
           <div className="stat-item">
-            <div className="label">סך השקעה</div>
-            <div className="value">{formatCurrency(stats.totalInvestment)}</div>
-          </div>
-          
-          <div className="stat-item">
-            <div className="label">ערך נכסים כולל</div>
+            <div className="label">ערך נכסים</div>
             <div className="value">{formatCurrency(stats.totalPropertyValue)}</div>
           </div>
           
           <div className="stat-item">
-            <div className="label">הכנסה חודשית</div>
-            <div className="value">{formatCurrency(stats.totalMonthlyRent)}</div>
+            <div className="label">יתרת הלוואות</div>
+            <div className="value">{formatCurrency(stats.totalLoansBalance)}</div>
           </div>
           
           <div className="stat-item">
-            <div className="label">תשואה ממוצעת</div>
-            <div className={`value ${stats.averageYield > 0 ? 'positive' : ''}`}>
-              {formatPercentage(stats.averageYield)}
-            </div>
+            <div className="label">סך הון עצמי</div>
+            <div className="value">{formatCurrency(stats.totalInvestment)}</div>
+          </div>
+          
+          <div className="stat-item">
+            <div className="label">השבחה שנתית</div>
+            <div className="value">{formatCurrency(stats.totalPropertyAppreciation)}</div>
+          </div>
+          
+          <div className="stat-item">
+            <div className="label">Portfolio LTV</div>
+            <div className="value">{formatPercentage(stats.averageLTV)}</div>
+          </div>
+          
+          <div className="stat-item">
+            <div className="label">הכנסה משכירות</div>
+            <div className="value">{formatCurrency(stats.totalMonthlyRent)}/חודש</div>
+          </div>
+          
+          <div className="stat-item">
+            <div className="label">עלות משכנתא</div>
+            <div className="value">{formatCurrency(stats.totalMortgageCost)}/חודש</div>
+          </div>
+          
+          <div className="stat-item">
+            <div className="label">תזרים גולמי</div>
+            <div className="value">{formatCurrency(stats.totalGrossCashflow)}/חודש</div>
+          </div>
+          
+          <div className="stat-item">
+            <div className="label">אחוז תפוסה</div>
+            <div className="value">{formatPercentage(stats.occupancyLevel)}</div>
           </div>
         </div>
       </div>

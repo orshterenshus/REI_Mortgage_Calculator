@@ -384,12 +384,12 @@ router.delete('/:id', async (req, res) => {
     const deal = await Deal.findByIdAndDelete(req.params.id);
     
     if (!deal) {
-      return res.status(404).json({ message: 'Deal not found' });
+      return res.status(404).json({ success: false, message: 'Deal not found' });
     }
     
-    res.status(200).json({ message: 'Deal deleted successfully' });
+    res.status(200).json({ success: true, message: 'Deal deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

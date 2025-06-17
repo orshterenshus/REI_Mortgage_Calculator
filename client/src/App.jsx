@@ -60,11 +60,36 @@ import ClientPortfolios from './components/portfolio/ClientPortfolios';
 import DealComparison from './components/deals/DealComparison';
 import DealViewer from './components/deals/DealViewer';
 import ClientPortfolioView from './components/portfolio/ClientPortfolioView';
+import SideTab from './components/SideTab';
+import PortfolioSummary from './components/PortfolioSummary';
 
 const AppContainer = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+`;
+
+const AppLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+`;
+
+const MainContentWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`;
+
+const ContentArea = styled.main`
+  flex: 1;
+  padding: ${props => props.sidebarExpanded ? '2rem 300px 2rem 0' : '2rem 80px 2rem 0'};
+  background-color: var(--background);
+  min-width: 0;
+  transition: padding 0.3s ease;
 `;
 
 const Header = styled.header`
@@ -80,17 +105,17 @@ const Header = styled.header`
 const HeaderContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: ${props => props.sidebarExpanded ? '0 300px 0 1rem' : '0 80px 0 1rem'};
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
+  transition: padding 0.3s ease;
 `;
 
 const Logo = styled.img`
-  position: absolute;
-  top: -1rem;
-  right: 2rem;
+  position: relative;
+  left: 600px;
   height: 80px;
   width: auto;
   
@@ -129,10 +154,11 @@ const MainNavbar = styled.nav`
 const NavContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: ${props => props.sidebarExpanded ? '0 300px 0 1rem' : '0 80px 0 1rem'};
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: padding 0.3s ease;
 `;
 
 const NavLinks = styled.div`
@@ -182,12 +208,6 @@ const UserInfo = styled.span`
   color: var(--text);
   font-size: 0.9rem;
   margin-right: 1rem;
-`;
-
-const MainContent = styled.main`
-  flex: 1;
-  padding: 2rem 0;
-  background-color: var(--background);
 `;
 
 const Footer = styled.footer`
@@ -312,6 +332,7 @@ const AppInner = () => {
   const [viewedDeal, setViewedDeal] = useState(null);
   const [viewedClientEmail, setViewedClientEmail] = useState(null);
   const [refreshPortfolio, setRefreshPortfolio] = useState(0);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const location = useLocation();
 
   const handleLogin = (user, token) => {
@@ -931,143 +952,184 @@ const AppInner = () => {
     }
   };
 
+  const handleSidebarToggle = (isExpanded) => {
+    setSidebarExpanded(isExpanded);
+  };
+
+  const handleSideTabNavigation = (destination) => {
+    switch(destination) {
+      case 'calculator':
+        handleTabChange('calculator');
+        break;
+      case 'portfolio-summary':
+        handleTabChange('portfolio-summary');
+        break;
+      case 'my-portfolio':
+        handleTabChange('portfolio');
+        break;
+      default:
+        break;
+    }
+  };
+
   // Determine if user is authenticated
   const isAuthenticated = user && token;
 
   // Always return the same structure
   return isAuthenticated ? (
     <AppContainer>
-      <Header>
-        <HeaderContent>
-          <Logo src="/assets/logo.png" alt="לוגו החברה" onError={(e) => e.target.style.display = 'none'} />
-          <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
-          <HeaderSubtitle>כלי מתקדם לחישוב כדאיות השקעה בנכסי נדל"ן ותחזית רווחיות ארוכת טווח</HeaderSubtitle>
-        </HeaderContent>
-        
-        {dbConnectionStatus && (
-          <DbStatusIndicator>
-            <StatusDot connected={dbConnectionStatus} /> מחובר למסד נתונים
-          </DbStatusIndicator>
-        )}
-      </Header>
-      
-      <MainNavbar>
-        <NavContent>
-          <NavLinks>
-            <NavLink 
-              className={activeTab === 'calculator' ? 'active' : ''} 
-              onClick={() => handleTabChange('calculator')}
-            >
-              חישוב חדש
-            </NavLink>
-            {user && user.role !== 'admin' && (
-              <NavLink 
-                className={activeTab === 'portfolio' ? 'active' : ''} 
-                onClick={() => handleTabChange('portfolio')}
-              >
-                התיק שלי
-              </NavLink>
-            )}
-            {user && user.role === 'admin' && (
-              <NavLink 
-                className={activeTab === 'clients' ? 'active' : ''} 
-                onClick={() => handleTabChange('clients')}
-              >
-                תיקי לקוחות
-              </NavLink>
-            )}
-          </NavLinks>
-          <div>
-            {user && <UserInfo>שלום, {user.fullName || user.email}</UserInfo>}
-            <LogoutButton onClick={handleLogout}>התנתק</LogoutButton>
-          </div>
-        </NavContent>
-      </MainNavbar>
-      
-      <MainContent>
-        {activeTab === 'calculator' && (
-          <div className="container">
-            {notification && (
-              <NotificationBanner success={notification.success}>
-                {notification.message}
-              </NotificationBanner>
-            )}
+      <SideTab 
+        onNavigate={handleSideTabNavigation} 
+        user={user} 
+        onToggle={handleSidebarToggle}
+      />
+      <AppLayout>
+        <MainContentWrapper>
+          <Header>
+            <HeaderContent sidebarExpanded={sidebarExpanded}>
+              <Logo src="/assets/logo.png" alt="לוגו החברה" onError={(e) => e.target.style.display = 'none'} />
+              <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
+              <HeaderSubtitle>כלי מתקדם לחישוב כדאיות השקעה בנכסי נדל"ן ותחזית רווחיות ארוכת טווח</HeaderSubtitle>
+            </HeaderContent>
             
-            <InputForm
-              inputs={inputs}
-              setInputs={handleInputChange}
-              onCalculate={calculateResults}
-              onSave={handleSave}
-              onClear={handleClear}
-              isCalculating={isCalculating}
-            />
-            
-            {results && (
-              <>
-                <ResultsSummary results={results} inputs={inputs} years={inputs.years} />
+            {dbConnectionStatus && (
+              <DbStatusIndicator>
+                <StatusDot connected={dbConnectionStatus} /> מחובר למסד נתונים
+              </DbStatusIndicator>
+            )}
+          </Header>
+          
+          <MainNavbar>
+            <NavContent sidebarExpanded={sidebarExpanded}>
+              <NavLinks>
+                <NavLink 
+                  className={activeTab === 'calculator' ? 'active' : ''} 
+                  onClick={() => handleTabChange('calculator')}
+                >
+                  חישוב חדש
+                </NavLink>
+                {user && user.role !== 'admin' && (
+                  <>
+                    <NavLink 
+                      className={activeTab === 'portfolio-summary' ? 'active' : ''} 
+                      onClick={() => handleTabChange('portfolio-summary')}
+                    >
+                      סיכום התיק
+                    </NavLink>
+                    <NavLink 
+                      className={activeTab === 'portfolio' ? 'active' : ''} 
+                      onClick={() => handleTabChange('portfolio')}
+                    >
+                      התיק שלי
+                    </NavLink>
+                  </>
+                )}
+                {user && user.role === 'admin' && (
+                  <NavLink 
+                    className={activeTab === 'clients' ? 'active' : ''} 
+                    onClick={() => handleTabChange('clients')}
+                  >
+                    תיקי לקוחות
+                  </NavLink>
+                )}
+              </NavLinks>
+              <div>
+                {user && <UserInfo>שלום, {user.fullName || user.email}</UserInfo>}
+                <LogoutButton onClick={handleLogout}>התנתק</LogoutButton>
+              </div>
+            </NavContent>
+          </MainNavbar>
+          
+          <ContentArea sidebarExpanded={sidebarExpanded}>
+            {activeTab === 'calculator' && (
+              <div className="container">
+                {notification && (
+                  <NotificationBanner success={notification.success}>
+                    {notification.message}
+                  </NotificationBanner>
+                )}
                 
-                <div className="charts-grid">
-                  <PropertyValueChart forecast={forecast} />
-                  <CashflowChart forecast={forecast} />
-                  <ProfitChart forecast={forecast} results={results} />
-                </div>
-                
-                <ForecastTable 
-                  forecast={forecast} 
-                  years={inputs.years}
-                  totalInvestment={results?.totalInvestment}
+                <InputForm
+                  inputs={inputs}
+                  setInputs={handleInputChange}
+                  onCalculate={calculateResults}
+                  onSave={handleSave}
+                  onClear={handleClear}
+                  isCalculating={isCalculating}
                 />
-              </>
+                
+                {results && (
+                  <>
+                    <ResultsSummary results={results} inputs={inputs} years={inputs.years} />
+                    
+                    <div className="charts-grid">
+                      <PropertyValueChart forecast={forecast} />
+                      <CashflowChart forecast={forecast} />
+                      <ProfitChart forecast={forecast} results={results} />
+                    </div>
+                    
+                    <ForecastTable 
+                      forecast={forecast} 
+                      years={inputs.years}
+                      totalInvestment={results?.totalInvestment}
+                    />
+                  </>
+                )}
+              </div>
             )}
-          </div>
-        )}
-        
-        {activeTab === 'portfolio' && (
-          <MyPortfolio 
-            onOpenDeal={handleOpenDeal}
-            onCompareDeals={handleCompareDeals}
-            refreshTrigger={refreshPortfolio}
-          />
-        )}
-        
-        {activeTab === 'clients' && user.role === 'admin' && (
-          <ClientPortfolios 
-            onOpenDeal={handleOpenDeal}
-            onViewClientPortfolio={handleViewClientPortfolio}
-          />
-        )}
-        
-        {activeTab === 'clientPortfolio' && viewedClientEmail && (
-          <ClientPortfolioView 
-            clientEmail={viewedClientEmail}
-            onOpenDeal={handleOpenDeal}
-            onBack={handleBackFromClientPortfolio}
-          />
-        )}
-        
-        {activeTab === 'comparison' && comparisonDealIds && (
-          <DealComparison 
-            dealIds={comparisonDealIds}
-            onBack={handleBackFromComparison}
-          />
-        )}
-        
-        {activeTab === 'viewer' && viewedDeal && (
-          <DealViewer 
-            deal={viewedDeal}
-            onBack={viewedClientEmail ? handleBackFromClientPortfolio : handleBackFromViewer}
-            onBackToPortfolio={viewedClientEmail ? handleBackFromViewerToClientPortfolio : null}
-            userRole={user?.role}
-            clientEmail={viewedClientEmail}
-          />
-        )}
-      </MainContent>
-      
-      <Footer>
-        <FooterContent>
-          <FooterText>© {new Date().getFullYear()} מחשבון השקעות נדל"ן | כל הזכויות שמורות</FooterText>
-        </FooterContent>
-      </Footer>
+
+            {activeTab === 'portfolio-summary' && (
+              <PortfolioSummary />
+            )}
+            
+            {activeTab === 'portfolio' && (
+              <MyPortfolio 
+                onOpenDeal={handleOpenDeal}
+                onCompareDeals={handleCompareDeals}
+                refreshTrigger={refreshPortfolio}
+              />
+            )}
+            
+            {activeTab === 'clients' && user.role === 'admin' && (
+              <ClientPortfolios 
+                onOpenDeal={handleOpenDeal}
+                onViewClientPortfolio={handleViewClientPortfolio}
+              />
+            )}
+            
+            {activeTab === 'clientPortfolio' && viewedClientEmail && (
+              <ClientPortfolioView 
+                clientEmail={viewedClientEmail}
+                onOpenDeal={handleOpenDeal}
+                onBack={handleBackFromClientPortfolio}
+              />
+            )}
+            
+            {activeTab === 'comparison' && comparisonDealIds && (
+              <DealComparison 
+                dealIds={comparisonDealIds}
+                onBack={handleBackFromComparison}
+              />
+            )}
+            
+            {activeTab === 'viewer' && viewedDeal && (
+              <DealViewer 
+                deal={viewedDeal}
+                onBack={viewedClientEmail ? handleBackFromClientPortfolio : handleBackFromViewer}
+                onBackToPortfolio={viewedClientEmail ? handleBackFromViewerToClientPortfolio : null}
+                userRole={user?.role}
+                clientEmail={viewedClientEmail}
+              />
+            )}
+          </ContentArea>
+          
+          <Footer>
+            <FooterContent>
+              <FooterText>© {new Date().getFullYear()} מחשבון השקעות נדל"ן | כל הזכויות שמורות</FooterText>
+            </FooterContent>
+          </Footer>
+        </MainContentWrapper>
+      </AppLayout>
     </AppContainer>
   ) : (
     <AuthScreen

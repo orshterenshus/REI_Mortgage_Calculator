@@ -1,0 +1,195 @@
+/**
+ * ========================================
+ * סטיילים עבור רכיב הSideTab
+ * ========================================
+ */
+
+.side-tab-container {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 1000;
+  background: #2d3338;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  transition: width 0.3s ease;
+  width: 60px;
+  overflow: hidden;
+}
+
+.side-tab-container.expanded {
+  width: 280px;
+}
+
+.side-tab-toggle {
+  position: absolute;
+  top: 20px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  background: #2d3338;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: all 0.3s ease;
+  z-index: 1001;
+}
+
+.side-tab-toggle:hover {
+  background: #343a40;
+  transform: scale(1.1);
+}
+
+.side-tab-buttons {
+  margin-top: 80px;
+  padding: 0 10px;
+}
+
+.side-tab-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px 5px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.side-tab-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8f9fa;
+}
+
+.side-tab-button svg {
+  margin-bottom: 5px;
+}
+
+.side-tab-button span {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.side-tab-expanded {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 70px 20px 20px;
+  background: #2d3338;
+  color: white;
+}
+
+.sidebar-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  color: white;
+}
+
+.logo-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  font-weight: 500;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.sidebar-item.highlighted {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  color: white;
+  font-weight: 600;
+}
+
+.sidebar-item.highlighted:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+  color: white;
+}
+
+.item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.sidebar-section {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 15px;
+  padding-right: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* אנימציות */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.side-tab-expanded {
+  animation: slideIn 0.3s ease;
+}
+
+/* רספונסיביות */
+@media (max-width: 768px) {
+  .side-tab-container {
+    width: 50px;
+  }
+  
+  .side-tab-container.expanded {
+    width: 250px;
+  }
+  
+  .side-tab-button span {
+    font-size: 0.6rem;
+  }
+} 

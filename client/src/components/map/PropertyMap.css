@@ -120,7 +120,7 @@
   justify-content: center;
   height: 500px;
   background: #fee;
-  color: #c33;
+  color: rgb(255, 0, 0);
   text-align: center;
   padding: 20px;
 }

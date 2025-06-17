@@ -58,6 +58,49 @@
   width: 100%;
 }
 
+/* מיכל שדה סיסמה */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-container .form-input {
+  padding-left: 0.75rem;
+  padding-right: 3rem; /* מקום לכפתור העין */
+}
+
+/* כפתור הצגת/הסתרת סיסמה */
+.password-toggle-btn {
+  position: absolute;
+  left: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.password-toggle-btn:hover {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+  color: var(--primary);
+}
+
+.password-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 .form-input:focus {
   outline: none;
   border-color: var(--primary);

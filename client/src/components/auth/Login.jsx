@@ -39,6 +39,14 @@ const Login = ({ onLogin, onRegisterClick, onForgotPasswordClick }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  /**
+   * טיפול בהצגת/הסתרת סיסמה
+   */
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   /**
    * טיפול בשינוי שדות הטופס
@@ -199,16 +207,37 @@ const Login = ({ onLogin, onRegisterClick, onForgotPasswordClick }) => {
             <label className="form-label" htmlFor="password">
               סיסמה
             </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              className={`form-input ${errors.password ? 'error' : ''}`}
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="הכנס סיסמה"
-              disabled={isLoading}
-            />
+            <div className="password-input-container">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                className={`form-input ${errors.password ? 'error' : ''}`}
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="הכנס סיסמה"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={togglePasswordVisibility}
+                tabIndex="-1"
+              >
+                {showPassword ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14.12 14.12L9.88 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9.88 14.12L14.12 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 17C7.5 17 3.5 13.4 3.5 12S7.5 7 12 7 20.5 10.6 20.5 12 16.5 17 12 17Z" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12Z" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                )}
+              </button>
+            </div>
             {errors.password && (
               <span className="field-error">{errors.password}</span>
             )}

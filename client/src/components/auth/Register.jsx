@@ -40,6 +40,22 @@ const Register = ({ onRegister, switchToLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  /**
+   * טיפול בהצגת/הסתרת סיסמה
+   */
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  /**
+   * טיפול בהצגת/הסתרת אימות סיסמה
+   */
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
 
   /**
    * טיפול בשינוי ערכי השדות
@@ -264,18 +280,39 @@ const Register = ({ onRegister, switchToLogin }) => {
         {/* שדה סיסמה */}
         <div className="form-group">
           <label className="form-label" htmlFor="password">סיסמא</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            className={`form-input ${fieldErrors.password ? 'error' : ''}`}
-            value={formData.password}
-            onChange={handleChange}
-            placeholder=""
-            required
-            disabled={isLoading}
-            autoComplete="new-password"
-          />
+          <div className="password-input-container">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              className={`form-input ${fieldErrors.password ? 'error' : ''}`}
+              value={formData.password}
+              onChange={handleChange}
+              placeholder=""
+              required
+              disabled={isLoading}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={togglePasswordVisibility}
+              tabIndex="-1"
+            >
+              {showPassword ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.12 14.12L9.88 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9.88 14.12L14.12 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 17C7.5 17 3.5 13.4 3.5 12S7.5 7 12 7 20.5 10.6 20.5 12 16.5 17 12 17Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12Z" stroke="currentColor" strokeWidth="2"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              )}
+            </button>
+          </div>
           {fieldErrors.password ? (
             <small className="field-help error">{fieldErrors.password}</small>
           ) : formData.password ? (
@@ -290,18 +327,39 @@ const Register = ({ onRegister, switchToLogin }) => {
         {/* שדה אימות סיסמה */}
         <div className="form-group">
           <label className="form-label" htmlFor="confirmPassword">אימות סיסמא</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            className={`form-input ${fieldErrors.confirmPassword ? 'error' : ''}`}
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            placeholder=""
-            required
-            disabled={isLoading}
-            autoComplete="new-password"
-          />
+          <div className="password-input-container">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirmPassword"
+              name="confirmPassword"
+              className={`form-input ${fieldErrors.confirmPassword ? 'error' : ''}`}
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder=""
+              required
+              disabled={isLoading}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={toggleConfirmPasswordVisibility}
+              tabIndex="-1"
+            >
+              {showConfirmPassword ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.12 14.12L9.88 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9.88 14.12L14.12 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 17C7.5 17 3.5 13.4 3.5 12S7.5 7 12 7 20.5 10.6 20.5 12 16.5 17 12 17Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12Z" stroke="currentColor" strokeWidth="2"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              )}
+            </button>
+          </div>
           {fieldErrors.confirmPassword && (
             <small className="field-help error">{fieldErrors.confirmPassword}</small>
           )}

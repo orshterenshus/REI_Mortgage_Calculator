@@ -1,270 +1,245 @@
 /**
  * ========================================
- * רכיב תיק אישי (MyPortfolio Component)
+ * רכיב התיק האישי (MyPortfolio Component)
  * ========================================
  * 
  * תיאור:
- * רכיב זה מציג את כל העסקאות השמורות של המשתמש המחובר
- * מאפשר צפייה, עריכה ומחיקה של עסקאות, השוואה בין עסקאות
+ * רכיב זה מציג את התיק האישי של המשתמש עם סיכום מפורט,
+ * תצוגת מפה, וניתוח ביצועים מעמיק
  * 
  * תלויות:
  * - React: ספריית ה-UI
- * - axios: לביצוע קריאות HTTP
- * - CSS: לעיצוב הרכיב
- * 
- * Props:
- * - onOpenDeal: Function - פונקציה לפתיחת עסקה בצפייה
- * - onCompareDeals: Function - פונקציה להשוואת עסקאות
- * - refreshTrigger: number - מונה לרענון אוטומטי
+ * - axios: תקשורת עם השרת
+ * - PropertyMap: רכיב המפה
  */
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../../styles/portfolio/MyPortfolio.css';
+import PropertyMap from '../map/PropertyMap';
+import './MyPortfolio.css';
 
 /**
  * ========================================
- * פונקציות עזר
+ * פונקציות עזר לפורמט
  * ========================================
  */
 
 /**
- * פורמט תאריך לעברית
- * 
- * @param {string} dateString - תאריך בפורמט ISO
- * @returns {string} תאריך מפורמט בעברית
+ * פורמט מטבע
  */
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('he-IL', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
-/**
- * פורמט מספר למטבע
- * 
- * @param {number} value - הערך לפורמט
- * @returns {string} ערך מפורמט במטבע
- */
-const formatCurrency = (value) => {
-  if (!value) return '₪0';
+const formatCurrency = (amount) => {
+  if (!amount && amount !== 0) return '₪0';
   return new Intl.NumberFormat('he-IL', {
     style: 'currency',
     currency: 'ILS',
     maximumFractionDigits: 0
-  }).format(value);
+  }).format(amount);
+};
+
+/**
+ * פורמט תאריך
+ */
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('he-IL');
 };
 
 /**
  * פורמט אחוזים
- * 
- * @param {number} value - הערך לפורמט
- * @returns {string} ערך מפורמט באחוזים
  */
 const formatPercentage = (value) => {
-  if (!value && value !== 0) return '0%';
-  return `${parseFloat(value).toFixed(1)}%`;
+  if (!value && value !== 0) return '0.00%';
+  if (value === Infinity || value === -Infinity) return 'Infinity%';
+  return `${value.toFixed(2)}%`;
 };
 
 /**
  * ========================================
- * רכיב התיק האישי הראשי
+ * רכיב הראשי
  * ========================================
  */
 const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
-  /**
-   * State Variables
-   */
+  // States עיקריים
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDeals, setSelectedDeals] = useState([]);
-  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('default');
+  const [stats, setStats] = useState({});
   
-  // נתונים סטטיסטיים
-  const [stats, setStats] = useState({
-    totalDeals: 0,
-    totalPropertyValue: 0,
-    totalLoansBalance: 0,
-    totalEquity: 0,
-    totalMonthlyRent: 0,
-    averageLTV: 0,
-    totalPropertyAppreciation: 0,
-    totalGrossCashflow: 0,
-    totalMortgageCost: 0,
-    occupancyLevel: 0
-  });
+  // States למצבי השוואה
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [selectedDeals, setSelectedDeals] = useState([]);
+
+  /**
+   * ========================================
+   * פונקציות לטעינת נתונים
+   * ========================================
+   */
 
   /**
    * טעינת עסקאות מהשרת
    */
   const fetchDeals = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      
       const token = localStorage.getItem('token');
+      if (!token) {
+        setError('לא נמצא טוקן אימות');
+        return;
+      }
+
       const response = await axios.get('http://localhost:5000/api/deals/my-deals', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
-        const userDeals = response.data.deals || [];
-        setDeals(userDeals);
-        calculateStats(userDeals);
-        
-        // שמירה ב-localStorage
-        localStorage.setItem('userDeals', JSON.stringify(userDeals));
-        localStorage.setItem('userDealsTime', Date.now().toString());
+        const dealsData = response.data.deals || [];
+        setDeals(dealsData);
+        calculateStats(dealsData);
       } else {
         setError(response.data.error || 'שגיאה בטעינת העסקאות');
       }
     } catch (err) {
       console.error('Error fetching deals:', err);
-      setError('שגיאה בטעינת העסקאות');
+      setError('שגיאה בחיבור לשרת');
     } finally {
       setLoading(false);
     }
   };
 
   /**
-   * חישוב סטטיסטיקות
-   * 
-   * @param {Array} dealsData - מערך העסקאות
+   * חישוב סטטיסטיקות מפורטות
    */
   const calculateStats = (dealsData) => {
     if (!dealsData || dealsData.length === 0) {
       setStats({
-        totalDeals: 0,
-        totalPropertyValue: 0,
-        totalLoansBalance: 0,
+        numberOfProperties: 0,
+        propertiesValue: 0,
+        loansBalance: 0,
         totalEquity: 0,
-        totalMonthlyRent: 0,
-        averageLTV: 0,
-        totalPropertyAppreciation: 0,
-        totalGrossCashflow: 0,
-        totalMortgageCost: 0,
-        occupancyLevel: 0
+        propertyAppreciation: 0,
+        portfolioLTV: 0,
+        rentalIncome: 0,
+        mortgageCost: 0,
+        grossCashflow: 0,
+        occupancyLevel: 50.00,
+        last12MonthsNetCashFlow: 0,
+        next12MonthsNetCashFlow: 0,
+        last12MonthsCashOnCash: 0,
+        next12MonthsCashOnCash: 0,
+        cashInvestment: 0,
+        tenYearsROI: 0,
+        tenYearsEquity: 0
       });
       return;
     }
 
-    const totalDeals = dealsData.length;
-    const totalPropertyValue = dealsData.reduce((sum, deal) => 
-      sum + (deal.propertyValue || 0), 0
-    );
-    const totalEquity = dealsData.reduce((sum, deal) => 
-      sum + (deal.equity || 0), 0
-    );
-    const totalMonthlyRent = dealsData.reduce((sum, deal) => 
-      sum + (deal.monthlyRent || 0), 0
-    );
+    // חישובים בסיסיים
+    const numberOfProperties = dealsData.length;
+    const propertiesValue = dealsData.reduce((sum, deal) => sum + (deal.propertyValue || 0), 0);
+    const totalEquity = dealsData.reduce((sum, deal) => sum + (deal.equity || 0), 0);
+    const rentalIncome = dealsData.reduce((sum, deal) => sum + (deal.monthlyRent || 0), 0);
     
-    // חישוב יתרת הלוואות
-    const totalLoansBalance = totalPropertyValue - totalEquity;
+    // חישוב יתרת הלוואות (מחיר נכס פחות הון עצמי)
+    const loansBalance = dealsData.reduce((sum, deal) => {
+      return sum + ((deal.propertyValue || 0) - (deal.equity || 0));
+    }, 0);
     
-    // חישוב LTV ממוצע
-    const averageLTV = totalPropertyValue > 0 ? (totalLoansBalance / totalPropertyValue) * 100 : 0;
-
-    // חישוב השבחה כוללת (בהנחה של השבחה של 3% שנתית)
-    const totalPropertyAppreciation = dealsData.reduce((sum, deal) => {
-      const annualAppreciation = (deal.propertyValue || 0) * ((deal.annualAppreciationRate || 3) / 100);
-      return sum + annualAppreciation;
+    // חישוב LTV (Loan to Value)
+    const portfolioLTV = propertiesValue > 0 ? (loansBalance / propertiesValue) * 100 : 0;
+    
+    // חישוב תשלומי משכנתא חודשיים
+    const mortgageCost = dealsData.reduce((sum, deal) => {
+      if (deal.results && deal.results.monthlyPayment) {
+        return sum + deal.results.monthlyPayment;
+      }
+      return sum;
     }, 0);
-
-    // חישוב תזרים מזומנים גולמי (הכנסות פחות הוצאות חודשיות)
-    const totalGrossCashflow = dealsData.reduce((sum, deal) => {
-      const monthlyRent = deal.monthlyRent || 0;
-      const monthlyExpenses = monthlyRent * ((deal.expenseRate || 10) / 100 / 12);
-      return sum + (monthlyRent - monthlyExpenses);
-    }, 0);
-
-    // חישוב עלות משכנתא חודשית (הערכה בהנחה של 4% ריבית ו-25 שנים)
-    const totalMortgageCost = dealsData.reduce((sum, deal) => {
-      const loanAmount = (deal.propertyValue || 0) - (deal.equity || 0);
-      if (loanAmount <= 0) return sum;
-      
-      const monthlyRate = 0.04 / 12; // 4% שנתי חלקי 12
-      const numPayments = 25 * 12; // 25 שנים כפול 12 חודשים
-      
-      if (monthlyRate > 0) {
-        const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
-                              (Math.pow(1 + monthlyRate, numPayments) - 1);
-        return sum + monthlyPayment;
+    
+    // חישוב תזרים גולמי
+    const grossCashflow = rentalIncome - mortgageCost;
+    
+    // חישוב השבחה (אם קיימת בתחזית)
+    const propertyAppreciation = dealsData.reduce((sum, deal) => {
+      if (deal.forecast && deal.forecast.length > 0) {
+        const firstYear = deal.forecast[0];
+        return sum + ((firstYear.propertyValue || deal.propertyValue || 0) - (deal.propertyValue || 0));
       }
       return sum;
     }, 0);
 
-    // חישוב אחוז תפוסה (בהנחה של 95% תפוסה)
-    const occupancyLevel = 95; // ברירת מחדל
+    // חישובים מתקדמים לטאבים נוספים
+    const cashInvestment = totalEquity;
+    const last12MonthsNetCashFlow = grossCashflow * 12;
+    const next12MonthsNetCashFlow = last12MonthsNetCashFlow; // הנחה שזהה
+    
+    // חישוב Cash on Cash
+    const last12MonthsCashOnCash = cashInvestment > 0 ? (last12MonthsNetCashFlow / cashInvestment) * 100 : 0;
+    const next12MonthsCashOnCash = last12MonthsCashOnCash;
+    
+    // חישוב תחזית 10 שנים
+    const tenYearsROI = dealsData.reduce((sum, deal) => {
+      if (deal.forecast && deal.forecast[9]) { // שנה 10
+        const year10 = deal.forecast[9];
+        return sum + (year10.totalProfitPercentage || 0);
+      }
+      return sum + 100; // הנחת ברירת מחדל
+    }, 0) / numberOfProperties;
+    
+    const tenYearsEquity = dealsData.reduce((sum, deal) => {
+      if (deal.forecast && deal.forecast[9]) {
+        return sum + (deal.forecast[9].equity || 0);
+      }
+      return sum + (deal.equity || 0) * 1.5; // הנחת ברירת מחדל
+    }, 0);
 
     setStats({
-      totalDeals,
-      totalPropertyValue,
-      totalLoansBalance,
-      totalEquity,
-      totalMonthlyRent,
-      averageLTV,
-      totalPropertyAppreciation,
-      totalGrossCashflow,
-      totalMortgageCost,
-      occupancyLevel
+      numberOfProperties,
+      propertiesValue,
+      loansBalance,
+      totalEquity: propertiesValue - loansBalance,
+      propertyAppreciation,
+      portfolioLTV: portfolioLTV === Infinity ? Infinity : portfolioLTV,
+      rentalIncome,
+      mortgageCost,
+      grossCashflow,
+      occupancyLevel: 50.00, // נתון קבוע לעת עתה
+      last12MonthsNetCashFlow,
+      next12MonthsNetCashFlow,
+      last12MonthsCashOnCash,
+      next12MonthsCashOnCash,
+      cashInvestment,
+      tenYearsROI,
+      tenYearsEquity
     });
   };
 
   /**
-   * אפקט לטעינת עסקאות מה-localStorage
+   * ========================================
+   * Effects
+   * ========================================
    */
+
   useEffect(() => {
-    const cachedDeals = localStorage.getItem('userDeals');
-    const cacheTime = localStorage.getItem('userDealsTime');
-    
-    // בדיקה אם יש נתונים בcache ואם הם עדיין תקפים (5 דקות)
-    if (cachedDeals && cacheTime) {
-      const cacheAge = Date.now() - parseInt(cacheTime);
-      if (cacheAge < 5 * 60 * 1000) { // 5 דקות
-        console.log('Loading deals from cache');
-        const parsedDeals = JSON.parse(cachedDeals);
-        setDeals(parsedDeals);
-        calculateStats(parsedDeals);
-        setLoading(false);
-        return;
-      }
-    }
-    
-    // אם אין cache או שהוא לא תקף, טען מהשרת
     fetchDeals();
   }, []);
 
-  /**
-   * אפקט לרענון כאשר מתקבל trigger
-   */
   useEffect(() => {
     if (refreshTrigger > 0) {
-      console.log('Refresh triggered, clearing cache and fetching new data');
-      localStorage.removeItem('userDeals');
-      localStorage.removeItem('userDealsTime');
+      console.log('Refresh triggered, fetching new data');
       fetchDeals();
     }
   }, [refreshTrigger]);
 
   /**
-   * טיפול בפתיחת עסקה לצפייה
-   * 
-   * @param {Object} deal - אובייקט העסקה
+   * ========================================
+   * פונקציות טיפול באירועים
+   * ========================================
    */
-  const handleViewDeal = (deal) => {
-    onOpenDeal(deal);
-  };
 
   /**
    * טיפול במחיקת עסקה
-   * 
-   * @param {string} dealId - מזהה העסקה למחיקה
    */
   const handleDeleteDeal = async (dealId) => {
     if (!window.confirm('האם אתה בטוח שברצונך למחוק עסקה זו?')) {
@@ -278,14 +253,9 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
       });
 
       if (response.data.success) {
-        // עדכון הרשימה המקומית
         const updatedDeals = deals.filter(deal => deal._id !== dealId);
         setDeals(updatedDeals);
         calculateStats(updatedDeals);
-        
-        // עדכון ה-cache
-        localStorage.setItem('userDeals', JSON.stringify(updatedDeals));
-        localStorage.setItem('userDealsTime', Date.now().toString());
       } else {
         setError('שגיאה במחיקת העסקה');
       }
@@ -297,8 +267,6 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
 
   /**
    * טיפול בבחירת עסקה להשוואה
-   * 
-   * @param {string} dealId - מזהה העסקה
    */
   const handleSelectDeal = (dealId) => {
     setSelectedDeals(prev => {
@@ -327,6 +295,398 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
     }
   };
 
+  /**
+   * ========================================
+   * רכיבי תצוגה
+   * ========================================
+   */
+
+  /**
+   * כותרת עם כפתורי פעולה
+   */
+  const renderHeader = () => (
+    <div className="portfolio-header">
+      <h1 className="portfolio-title">התיק האישי שלי</h1>
+      <div className="header-buttons">
+        <button className="header-btn primary">+ הוסף נכס</button>
+        <button className="header-btn secondary">📄 המסמכים שלי</button>
+        <button className="header-btn secondary">🔍 בדיקת לחץ</button>
+        <button className="header-btn secondary">📊 ייצוא</button>
+        <button className="header-btn secondary">📅 הגדרת תאריכי יעד</button>
+      </div>
+    </div>
+  );
+
+  /**
+   * סיכום סטטיסטיקות עליון
+   */
+  const renderTopStats = () => {
+    // התאמת סטטיסטיקות לפי הטאב הפעיל
+    switch (activeTab) {
+      case 'map':
+        return null; // אין צורך בסטטיסטיקות במפה
+        
+      case 'performance':
+        return (
+          <div className="stats-grid top-stats">
+            <div className="stat-card">
+              <div className="stat-label">מספר נכסים</div>
+              <div className="stat-value">{stats.numberOfProperties}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">תזרים נטו חודשי</div>
+              <div className="stat-value">{formatCurrency(stats.grossCashflow)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">תשואה על הון עצמי</div>
+              <div className="stat-value">{formatPercentage(stats.last12MonthsCashOnCash)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">סך הון עצמי</div>
+              <div className="stat-value">{formatCurrency(stats.totalEquity)}</div>
+            </div>
+          </div>
+        );
+        
+      case 'equity':
+        return (
+          <div className="stats-grid top-stats">
+            <div className="stat-card">
+              <div className="stat-label">מספר נכסים</div>
+              <div className="stat-value">{stats.numberOfProperties}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">סך הון עצמי</div>
+              <div className="stat-value">{formatCurrency(stats.totalEquity)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">יחס מימון ממוצע</div>
+              <div className="stat-value">{formatPercentage(stats.portfolioLTV)}</div>
+            </div>
+          </div>
+        );
+        
+      default: // default, deals
+        return (
+          <div className="stats-grid top-stats">
+            <div className="stat-card">
+              <div className="stat-label">מספר נכסים</div>
+              <div className="stat-value">{stats.numberOfProperties}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">שווי נכסים</div>
+              <div className="stat-value blue">{formatCurrency(stats.propertiesValue)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">הכנסה חודשית</div>
+              <div className="stat-value">{formatCurrency(stats.rentalIncome)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">תזרים חודשי</div>
+              <div className="stat-value">{formatCurrency(stats.grossCashflow)}</div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  /**
+   * סיכום סטטיסטיקות תחתון
+   */
+  const renderBottomStats = () => {
+    // הסטטיסטיקות התחתונות יוצגו רק בטאב ברירת מחדל
+    if (activeTab !== 'default') {
+      return null;
+    }
+    
+    return (
+      <div className="stats-grid bottom-stats">
+        <div className="stat-card">
+          <div className="stat-label">יתרת משכנתאות</div>
+          <div className="stat-value pink">{formatCurrency(stats.loansBalance)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">עלות משכנתא חודשית</div>
+          <div className="stat-value">{formatCurrency(stats.mortgageCost)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">יחס מימון</div>
+          <div className="stat-value">{formatPercentage(stats.portfolioLTV)}</div>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * טאבים לניווט
+   */
+  const renderTabs = () => (
+    <div className="tabs-container">
+      <div className="tabs">
+        <button 
+          className={`tab ${activeTab === 'map' ? 'active' : ''}`}
+          onClick={() => setActiveTab('map')}
+        >
+          תצוגת מפה
+        </button>
+        <button 
+          className={`tab ${activeTab === 'default' ? 'active' : ''}`}
+          onClick={() => setActiveTab('default')}
+        >
+          נתונים כלליים
+        </button>
+        <button 
+          className={`tab ${activeTab === 'performance' ? 'active' : ''}`}
+          onClick={() => setActiveTab('performance')}
+        >
+          ביצועים
+        </button>
+        <button 
+          className={`tab ${activeTab === 'equity' ? 'active' : ''}`}
+          onClick={() => setActiveTab('equity')}
+        >
+          הון עצמי
+        </button>
+        <button 
+          className={`tab ${activeTab === 'deals' ? 'active' : ''}`}
+          onClick={() => setActiveTab('deals')}
+        >
+          פרטי עסקאות
+        </button>
+      </div>
+      <div className="tab-actions">
+        <button className="manage-views-btn">⚙️ ניהול תצוגות</button>
+      </div>
+    </div>
+  );
+
+  /**
+   * תצוגת מפה
+   */
+  const renderMapView = () => (
+    <div className="map-container">
+      <PropertyMap 
+        deals={deals} 
+        onDealClick={(deal) => onOpenDeal && onOpenDeal(deal)}
+      />
+    </div>
+  );
+
+  /**
+   * תצוגת Default
+   */
+  const renderDefaultView = () => (
+    <div className="properties-table">
+      <table>
+        <thead>
+          <tr>
+            <th>📍</th>
+            <th>כתובת</th>
+            <th>שווי נכס</th>
+            <th>מחיר רכישה</th>
+            <th>הכנסה חודשית</th>
+            <th>יתרת משכנתא</th>
+            <th>ריבית נוכחית</th>
+            <th>תאריך פקיעת ריבית</th>
+            <th>עלות חודשית</th>
+            <th>יחס מימון</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deals.map((deal) => (
+            <tr key={deal._id} onClick={() => onOpenDeal(deal)}>
+              <td>🏠</td>
+              <td>{deal.address}</td>
+              <td>{formatCurrency(deal.propertyValue)}</td>
+              <td>{formatCurrency(deal.propertyValue)}</td>
+              <td>{formatCurrency(deal.monthlyRent)}</td>
+              <td>{formatCurrency((deal.propertyValue || 0) - (deal.equity || 0))}</td>
+              <td>4.0%</td>
+              <td>-</td>
+              <td>{deal.results ? formatCurrency(deal.results.monthlyPayment) : '-'}</td>
+              <td>{((((deal.propertyValue || 0) - (deal.equity || 0)) / (deal.propertyValue || 1)) * 100).toFixed(1)}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  /**
+   * תצוגת Performance
+   */
+  const renderPerformanceView = () => (
+    <div className="performance-container">
+      <div className="performance-stats">
+        <div className="stat-card">
+          <div className="stat-label">מספר נכסים</div>
+          <div className="stat-value">{stats.numberOfProperties}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">תזרים נטו 12 חודשים אחרונים</div>
+          <div className="stat-value">{formatCurrency(stats.last12MonthsNetCashFlow)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">תזרים נטו 12 חודשים הבאים</div>
+          <div className="stat-value">{formatCurrency(stats.next12MonthsNetCashFlow)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">תשואה על הון 12 חודשים אחרונים</div>
+          <div className="stat-value">{formatPercentage(stats.last12MonthsCashOnCash)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">תשואה על הון 12 חודשים הבאים</div>
+          <div className="stat-value">{formatPercentage(stats.next12MonthsCashOnCash)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">סך הון עצמי</div>
+          <div className="stat-value">{formatCurrency(stats.totalEquity)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">השקעה במזומן</div>
+          <div className="stat-value">{formatCurrency(stats.cashInvestment)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">תשואה 10 שנים</div>
+          <div className="stat-value">{formatPercentage(stats.tenYearsROI)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">הון עצמי בעוד 10 שנים</div>
+          <div className="stat-value">{formatCurrency(stats.tenYearsEquity)}</div>
+        </div>
+      </div>
+      
+      <div className="performance-table">
+        <table>
+          <thead>
+            <tr>
+              <th>📍</th>
+              <th>כתובת</th>
+              <th>השקעה במזומן</th>
+              <th>תזרים נטו 12 חודשים אחרונים</th>
+              <th>תשואה על הון 12 חודשים אחרונים</th>
+              <th>תשואה גולמי 12 חודשים אחרונים</th>
+              <th>תזרים נטו 12 חודשים הבאים</th>
+              <th>תשואה על הון 12 חודשים הבאים</th>
+              <th>תשואה 12 חודשים הבאים</th>
+              <th>שיעור הוון 12 חודשים הבאים</th>
+              <th>הון עצמי בעוד 10 שנים</th>
+              <th>תשואה 10 שנים</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deals.map((deal) => (
+              <tr key={deal._id}>
+                <td>🏠</td>
+                <td>{deal.address}</td>
+                <td>{formatCurrency(deal.equity)}</td>
+                <td>{formatCurrency((deal.monthlyRent || 0) * 12 - (deal.results?.monthlyPayment || 0) * 12)}</td>
+                <td>{formatPercentage(deal.equity > 0 ? (((deal.monthlyRent || 0) * 12 - (deal.results?.monthlyPayment || 0) * 12) / deal.equity) * 100 : 0)}</td>
+                <td>{formatPercentage(deal.propertyValue > 0 ? ((deal.monthlyRent || 0) * 12 / deal.propertyValue) * 100 : 0)}</td>
+                <td>{formatCurrency((deal.monthlyRent || 0) * 12 - (deal.results?.monthlyPayment || 0) * 12)}</td>
+                <td>{formatPercentage(deal.equity > 0 ? (((deal.monthlyRent || 0) * 12 - (deal.results?.monthlyPayment || 0) * 12) / deal.equity) * 100 : 0)}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>{deal.forecast && deal.forecast[9] ? formatCurrency(deal.forecast[9].equity) : '-'}</td>
+                <td>{deal.forecast && deal.forecast[9] ? formatPercentage(deal.forecast[9].totalProfitPercentage) : '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  /**
+   * תצוגת Equity
+   */
+  const renderEquityView = () => (
+    <div className="equity-table">
+      <table>
+        <thead>
+          <tr>
+            <th>📍</th>
+            <th>כתובת</th>
+            <th>הון עצמי</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deals.map((deal) => (
+            <tr key={deal._id}>
+              <td>🏠</td>
+              <td>{deal.address}</td>
+              <td>{formatCurrency(deal.equity)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  /**
+   * תצוגת Deal Details
+   */
+  const renderDealDetailsView = () => (
+    <div className="deal-details-table">
+      <table>
+        <thead>
+          <tr>
+            <th>📍</th>
+            <th>כתובת</th>
+            <th>שם סוכן</th>
+            <th>טלפון סוכן</th>
+            <th>אימייל סוכן</th>
+            <th>תאריך צפייה</th>
+            <th>קישור נכס 1</th>
+            <th>קישור נכס 2</th>
+            <th>הערות</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deals.map((deal) => (
+            <tr key={deal._id}>
+              <td>🏠</td>
+              <td>{deal.address}</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  /**
+   * בחירת תצוגה לפי טאב פעיל
+   */
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case 'map':
+        return renderMapView();
+      case 'default':
+        return renderDefaultView();
+      case 'performance':
+        return renderPerformanceView();
+      case 'equity':
+        return renderEquityView();
+      case 'deals':
+        return renderDealDetailsView();
+      default:
+        return renderDefaultView();
+    }
+  };
+
+  /**
+   * ========================================
+   * רכיב הראשי המוחזר
+   * ========================================
+   */
+
   // מצב טעינה
   if (loading) {
     return (
@@ -349,166 +709,15 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
 
   return (
     <div className="portfolio-container">
-      <div className="portfolio-header">
-        <h2 className="portfolio-title">התיק שלי</h2>
-        <div className="header-actions">
-          {deals.length > 1 && (
-            <button 
-              className={`compare-button ${isCompareMode ? 'active' : ''}`}
-              onClick={toggleCompareMode}
-            >
-              {isCompareMode ? 'ביטול השוואה' : 'השוואת עסקאות'}
-            </button>
-          )}
-          {isCompareMode && selectedDeals.length >= 2 && (
-            <button 
-              className="execute-compare-button"
-              onClick={handleCompare}
-            >
-              השווה ({selectedDeals.length})
-            </button>
-          )}
-        </div>
+      {renderHeader()}
+      {renderTopStats()}
+      {renderBottomStats()}
+      {renderTabs()}
+      <div className="tab-content">
+        {renderActiveTabContent()}
       </div>
-
-      {/* סיכום התיק */}
-      {deals.length > 0 && (
-        <div className="portfolio-summary">
-          <h3 className="summary-title">סיכום התיק</h3>
-          <div className="summary-grid">
-            <div className="summary-item">
-              <div className="summary-label">מספר נכסים</div>
-              <div className="summary-value">{stats.totalDeals}</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">ערך נכסים</div>
-              <div className="summary-value">{formatCurrency(stats.totalPropertyValue)}</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">יתרת הלוואות</div>
-              <div className="summary-value">{formatCurrency(stats.totalLoansBalance)}</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">סך הון עצמי</div>
-              <div className="summary-value">{formatCurrency(stats.totalEquity)}</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">השבחה שנתית</div>
-              <div className="summary-value">{formatCurrency(stats.totalPropertyAppreciation)}</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">Portfolio LTV</div>
-              <div className="summary-value">{formatPercentage(stats.averageLTV)}</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">הכנסה משכירות</div>
-              <div className="summary-value">{formatCurrency(stats.totalMonthlyRent)}/חודש</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">עלות משכנתא</div>
-              <div className="summary-value">{formatCurrency(stats.totalMortgageCost)}/חודש</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">תזרים גולמי</div>
-              <div className="summary-value">{formatCurrency(stats.totalGrossCashflow)}/חודש</div>
-            </div>
-            
-            <div className="summary-item">
-              <div className="summary-label">אחוז תפוסה</div>
-              <div className="summary-value">{formatPercentage(stats.occupancyLevel)}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {deals.length === 0 ? (
-        <div className="empty-state">
-          <h3>אין עסקאות שמורות</h3>
-          <p>כשתבצע חישוב ותשמור אותו, תוכל לראות אותו כאן</p>
-        </div>
-      ) : (
-        <div className="deals-grid">
-          {deals.map((deal) => (
-            <div 
-              key={deal._id} 
-              className={`deal-card ${isCompareMode && selectedDeals.includes(deal._id) ? 'selected' : ''}`}
-            >
-              {isCompareMode && (
-                <div className="deal-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedDeals.includes(deal._id)}
-                    onChange={() => handleSelectDeal(deal._id)}
-                  />
-                </div>
-              )}
-              
-              {!isCompareMode && (
-                <div className="deal-actions">
-                  <button 
-                    className="delete-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteDeal(deal._id);
-                    }}
-                    title="מחק עסקה"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              )}
-              
-              <div className="deal-content" onClick={() => !isCompareMode && handleViewDeal(deal)}>
-                <h3 className="deal-title">
-                  {deal.address || `עסקה ${deal._id?.slice(-6)}`}
-                </h3>
-                
-                <div className="deal-details">
-                  {deal.propertyValue && deal.propertyValue > 0 && (
-                    <div className="detail-item">
-                      <span className="label">מחיר נכס</span>
-                      <span className="value">{formatCurrency(deal.propertyValue)}</span>
-                    </div>
-                  )}
-                  
-                  {deal.equity && deal.equity > 0 && (
-                    <div className="detail-item">
-                      <span className="label">הון עצמי</span>
-                      <span className="value">{formatCurrency(deal.equity)}</span>
-                    </div>
-                  )}
-                  
-                  {deal.monthlyRent && deal.monthlyRent > 0 && (
-                    <div className="detail-item">
-                      <span className="label">שכירות חודשית</span>
-                      <span className="value">{formatCurrency(deal.monthlyRent)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="deal-date">
-                  נוצר ב-{formatDate(deal.createdAt)}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
 
-/**
- * ========================================
- * ייצוא הרכיב
- * ========================================
- */
 export default MyPortfolio; 

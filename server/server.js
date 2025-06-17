@@ -14,12 +14,16 @@
  * - dotenv: טעינת משתני סביבה
  */
 
+// טעינת משתני סביבה קודם לכל דבר אחר
+const path = require('path');
+require('dotenv').config();
+console.log('Loading .env from:', path.join(__dirname, '.env'));
+console.log('MONGO_URI loaded:', process.env.MONGO_URI ? 'YES' : 'NO');
+
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const path = require('path');
 const { connectDB } = require('./config/db');
-require('dotenv').config();
 const mongoose = require('mongoose');
 
 /**

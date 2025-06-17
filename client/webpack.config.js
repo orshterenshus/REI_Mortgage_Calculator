@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   entry: './src/index.js',
@@ -35,13 +36,22 @@ module.exports = {
     fallback: {
       "path": require.resolve("path-browserify"),
       "os": require.resolve("os-browserify/browser"),
-      "process": require.resolve("process/browser"),
-      "util": require.resolve("util/")
+      "process": require.resolve("process/browser.js"),
+      "util": require.resolve("util/"),
+      "buffer": require.resolve("buffer"),
+      "stream": require.resolve("stream-browserify")
     }
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html'
+    }),
+    new webpack.DefinePlugin({
+      'process.env.REACT_APP_GOOGLE_MAPS_API_KEY': JSON.stringify('AIzaSyDEBC0buv1GHq8LaKH-zt-RTCnKs8a0MvE')
+    }),
+    new webpack.ProvidePlugin({
+      process: 'process/browser.js',
+      Buffer: ['buffer', 'Buffer']
     })
   ],
   devServer: {
@@ -50,9 +60,17 @@ module.exports = {
       directory: path.join(__dirname, 'public'),
     },
     port: 3000,
-    proxy: {
-      '/api': 'http://localhost:5000',
-      '/mortgage-data': 'http://localhost:5000'
-    }
+    proxy: [
+      {
+        context: ['/api'],
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      },
+      {
+        context: ['/mortgage-data'],
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      }
+    ]
   }
 }; 

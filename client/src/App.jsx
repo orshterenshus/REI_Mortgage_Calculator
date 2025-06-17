@@ -84,6 +84,21 @@ const HeaderContent = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+`;
+
+const Logo = styled.img`
+  position: absolute;
+  top: -1rem;
+  right: 2rem;
+  height: 80px;
+  width: auto;
+  
+  @media (max-width: 768px) {
+    position: static;
+    margin-bottom: 1rem;
+    height: 50px;
+  }
 `;
 
 const HeaderTitle = styled.h1`
@@ -325,20 +340,15 @@ const AppInner = () => {
       
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.deals && data.deals.length > 0) {
-          // User has existing deals - show portfolio
-          setActiveTab('portfolio');
-        } else {
-          // User has no deals - show calculator
-          setActiveTab('calculator');
-        }
+        // Always show portfolio first for regular users after login
+        setActiveTab('portfolio');
       } else {
-        // Default to calculator if can't check
-        setActiveTab('calculator');
+        // Default to portfolio even if can't check
+        setActiveTab('portfolio');
       }
     } catch (error) {
       console.error('Error checking user deals:', error);
-      setActiveTab('calculator');
+      setActiveTab('portfolio');
     }
   };
 
@@ -929,6 +939,7 @@ const AppInner = () => {
     <AppContainer>
       <Header>
         <HeaderContent>
+          <Logo src="/assets/logo.png" alt="לוגו החברה" onError={(e) => e.target.style.display = 'none'} />
           <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
           <HeaderSubtitle>כלי מתקדם לחישוב כדאיות השקעה בנכסי נדל"ן ותחזית רווחיות ארוכת טווח</HeaderSubtitle>
         </HeaderContent>

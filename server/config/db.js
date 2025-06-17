@@ -34,7 +34,9 @@ const connectDB = async () => {
      */
     
     // כתובת מסד הנתונים - ברירת מחדל לפיתוח מקומי
-    const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/apartment-calculator';
+    const mongoURI = process.env.MONGO_URI || 'mongodb+srv://or803803:Aa123456@mortgageapp.y0bkyzu.mongodb.net/mortgageApp';
+    //const mongoURI = 'mongodb+srv://or803803:Aa123456@mortgageapp.y0bkyzu.mongodb.net/mortgageApp'
+    console.log('DEBUG: Final mongoURI =',mongoURI);
     
     // אפשרויות החיבור למסד הנתונים
     const connectionOptions = {
@@ -50,7 +52,7 @@ const connectDB = async () => {
     /**
      * ========================================
      * שלב 2: ניהול קולקציות במסד הנתונים
-     * ========================================
+     * ========================================ד
      */
     
     try {

@@ -1,0 +1,333 @@
+/* מחשבון השקעות נדל"ן - עיצוב מקורי עברי */
+
+/* מיכל ראשי */
+.input-form-container {
+  padding: 30px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  min-height: 100vh;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  direction: rtl;
+  color: #1a202c;
+}
+
+/* כותרת ראשית */
+.form-header {
+  text-align: center;
+  margin-bottom: 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.form-header h1 {
+  margin: 0 0 15px 0;
+  font-size: 2.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.form-header p {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+/* טופס ראשי */
+.investment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* קטעי טופס */
+.form-section {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.form-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+/* כותרת קטע */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f7fafc;
+  direction: ltr;
+  justify-content: space-between;
+}
+
+.section-icon {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+/* רשת שדות קלט */
+.inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+/* קבוצת שדה קלט */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 5px;
+}
+
+/* שדות קלט */
+.form-input {
+  padding: 15px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #2d3748;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  outline: none;
+  font-family: inherit;
+  direction: rtl;
+}
+
+.form-input:focus {
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+  background: #fffef7;
+}
+
+.form-input:hover:not(:disabled) {
+  border-color: #cbd5e0;
+}
+
+.form-input:disabled {
+  background-color: #f7fafc;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.form-input.readonly {
+  background-color: #edf2f7;
+  color: #4a5568;
+  cursor: default;
+}
+
+.form-input::placeholder {
+  color: #a0aec0;
+  font-weight: 400;
+}
+
+/* שדות עם יחידה */
+.input-with-currency,
+.input-with-unit {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-currency .form-input,
+.input-with-unit .form-input {
+  padding-left: 60px;
+}
+
+.currency,
+.unit {
+  position: absolute;
+  left: 20px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #718096;
+  pointer-events: none;
+}
+
+/* הערות שדה */
+.input-note {
+  font-size: 0.9rem;
+  color: #718096;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* כפתורי פעולה */
+.form-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding: 30px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+/* כפתורים בסיסיים */
+.btn-primary,
+.btn-secondary,
+.btn-tertiary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+/* כפתור ראשי */
+.btn-primary {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  color: white;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4);
+}
+
+/* כפתור משני */
+.btn-secondary {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  color: white;
+  box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(66, 153, 225, 0.4);
+}
+
+/* כפתור שלישוני */
+.btn-tertiary {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  color: white;
+  box-shadow: 0 8px 20px rgba(229, 62, 62, 0.3);
+}
+
+.btn-tertiary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(229, 62, 62, 0.4);
+}
+
+/* כפתורים מבוטלים */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-tertiary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* אייקונים בכפתורים */
+.btn-icon {
+  font-size: 1.2rem;
+}
+
+/* ספינר טעינה */
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* עיצוב רספונסיבי */
+@media (max-width: 768px) {
+  .input-form-container {
+    padding: 20px;
+  }
+
+  .form-header h1 {
+    font-size: 2.2rem;
+  }
+
+  .form-header p {
+    font-size: 1rem;
+  }
+
+  .inputs-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .form-section {
+    padding: 20px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .section-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-tertiary {
+    justify-content: center;
+    width: 100%;
+  }
+} 

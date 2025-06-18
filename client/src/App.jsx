@@ -62,6 +62,9 @@ import DealViewer from './components/deals/DealViewer';
 import ClientPortfolioView from './components/portfolio/ClientPortfolioView';
 import SideTab from './components/SideTab';
 import PortfolioSummary from './components/PortfolioSummary';
+import { DealsProvider, useDeals } from './contexts/DealsContext';
+import { formatNumberWithCommas } from './utils/formatting';
+import './styles/results.css';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -86,10 +89,10 @@ const MainContentWrapper = styled.div`
 
 const ContentArea = styled.main`
   flex: 1;
-  padding: ${props => props.sidebarExpanded ? '2rem 300px 2rem 0' : '2rem 80px 2rem 0'};
+  padding: 2rem 105px 2rem 0;
   background-color: var(--background);
   min-width: 0;
-  transition: padding 0.3s ease;
+  transition: padding-right 0.3s ease;
 `;
 
 const Header = styled.header`
@@ -105,12 +108,11 @@ const Header = styled.header`
 const HeaderContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: ${props => props.sidebarExpanded ? '0 300px 0 1rem' : '0 80px 0 1rem'};
+  padding: 0 105px 0 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  transition: padding 0.3s ease;
 `;
 
 const Logo = styled.img`
@@ -154,11 +156,10 @@ const MainNavbar = styled.nav`
 const NavContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: ${props => props.sidebarExpanded ? '0 300px 0 1rem' : '0 80px 0 1rem'};
+  padding: 0 105px 0 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: padding 0.3s ease;
 `;
 
 const NavLinks = styled.div`
@@ -270,18 +271,18 @@ const FIXED_ANNUAL_INTEREST_RATE = 4;
 
 const defaultInputs = {
   address: '',
-  propertyValue: 0,
-  purchaseExpenseRate: 0,
-  equity: 0,
-  renovationCost: 0,
-  purchaseTax: 0,
-  years: 0,
-  marketValue: 0,
-  annualAppreciationRate: 0,
-  monthlyRent: 0,
-  expenseRate: 0,
+  propertyValue: '',
+  purchaseExpenseRate: '',
+  equity: '',
+  renovationCost: '',
+  purchaseTax: '',
+  years: '',
+  marketValue: '',
+  annualAppreciationRate: '',
+  monthlyRent: '',
+  expenseRate: '',
   // Hidden fields with fixed values
-  mortgageYears: 0,
+  mortgageYears: '',
   annualInterestRate: FIXED_ANNUAL_INTEREST_RATE,
 };
 
@@ -310,30 +311,26 @@ const AuthScreen = ({ showRegister, setShowRegister, showForgot, setShowForgot, 
   return <Login onLogin={handleLogin} onRegisterClick={() => setShowRegister(true)} onForgotPasswordClick={() => { setShowForgot(true); setShowRegister(false); }} />;
 };
 
-const AppInner = () => {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [inputs, setInputs] = useState(defaultInputs);
+const AppContent = () => {
+  const { refreshDeals } = useDeals();
+  
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [activeTab, setActiveTab] = useState('calculator');
+  const [inputs, setInputs] = useState({});
   const [results, setResults] = useState(null);
   const [forecast, setForecast] = useState([]);
   const [notification, setNotification] = useState(null);
   const [csvLoaded, setCsvLoaded] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [dbConnectionStatus, setDbConnectionStatus] = useState(false);
+  const [dbConnectionStatus, setDbConnectionStatus] = useState(null);
   const [currentDealId, setCurrentDealId] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [showReset, setShowReset] = useState(false);
-  const [activeTab, setActiveTab] = useState('calculator');
   const [comparisonDealIds, setComparisonDealIds] = useState(null);
   const [viewedDeal, setViewedDeal] = useState(null);
   const [viewedClientEmail, setViewedClientEmail] = useState(null);
-  const [refreshPortfolio, setRefreshPortfolio] = useState(0);
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const location = useLocation();
 
   const handleLogin = (user, token) => {
     setUser(user);
@@ -708,12 +705,12 @@ const AppInner = () => {
               success: true
             });
             
-            // Trigger portfolio refresh
-            setRefreshPortfolio(prev => prev + 1);
+            // רענון מטמון העסקאות
+            refreshDeals();
             
             // For regular users, switch to portfolio after first save
-            if (user && user.role !== 'admin') {
-              handleTabChange('portfolio');
+            if (user.role !== 'admin') {
+              setActiveTab('portfolio-summary');
             }
             
             // Hide notification after 3 seconds
@@ -866,8 +863,13 @@ const AppInner = () => {
           success: true
         });
         
-        // Trigger portfolio refresh
-        setRefreshPortfolio(prev => prev + 1);
+        // רענון מטמון העסקאות
+        refreshDeals();
+        
+        // For regular users, switch to portfolio after first save
+        if (user.role !== 'admin') {
+          setActiveTab('portfolio-summary');
+        }
       } else {
         throw new Error(data.error || 'שגיאה בשמירה');
       }
@@ -896,6 +898,9 @@ const AppInner = () => {
     
     // Clear localStorage data
     clearData();
+    
+    // Clear sessionStorage edit data
+    sessionStorage.removeItem('editDealData');
     
     setNotification({
       message: 'הטופס אופס בהצלחה',
@@ -946,29 +951,54 @@ const AppInner = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     
-    // Trigger refresh when switching to portfolio
-    if (tab === 'portfolio') {
-      setRefreshPortfolio(prev => prev + 1);
-    }
-  };
-
-  const handleSidebarToggle = (isExpanded) => {
-    setSidebarExpanded(isExpanded);
-  };
-
-  const handleSideTabNavigation = (destination) => {
-    switch(destination) {
-      case 'calculator':
-        handleTabChange('calculator');
-        break;
-      case 'portfolio-summary':
-        handleTabChange('portfolio-summary');
-        break;
-      case 'my-portfolio':
-        handleTabChange('portfolio');
-        break;
-      default:
-        break;
+    // Load edit data when switching to calculator
+    if (tab === 'calculator') {
+      const editDealData = sessionStorage.getItem('editDealData');
+      if (editDealData) {
+        try {
+          const dealData = JSON.parse(editDealData);
+          console.log('Loading deal data for editing:', dealData);
+          
+          // Map deal data to form inputs
+          const mappedInputs = {
+            address: dealData.address || '',
+            propertyValue: dealData.propertyValue || '',
+            equity: dealData.equity || '',
+            years: dealData.loanTerm || 25,
+            monthlyRent: dealData.monthlyRent || '',
+            purchaseExpenseRate: dealData.purchaseTaxRate || 5,
+            renovationCost: dealData.otherExpenses || '',
+            purchaseTax: dealData.lawyerFee || '',
+            marketValue: dealData.propertyValue || '',
+            annualAppreciationRate: dealData.annualAppreciationRate || '',
+            expenseRate: dealData.annualExpensesRate || 10,
+            mortgageYears: dealData.loanTerm || 25,
+            annualInterestRate: dealData.annualInterestRate || 4.0,
+          };
+          
+          setInputs(mappedInputs);
+          
+          // Clear the session storage after loading
+          sessionStorage.removeItem('editDealData');
+          
+          // Show notification
+          setNotification({
+            message: 'נתוני העסקה נטענו לעריכה',
+            success: true
+          });
+          
+          setTimeout(() => setNotification(null), 3000);
+          
+        } catch (error) {
+          console.error('Error loading edit deal data:', error);
+          setNotification({
+            message: 'שגיאה בטעינת נתוני העסקה לעריכה',
+            success: false
+          });
+          
+          setTimeout(() => setNotification(null), 3000);
+        }
+      }
     }
   };
 
@@ -979,14 +1009,18 @@ const AppInner = () => {
   return isAuthenticated ? (
     <AppContainer>
       <SideTab 
-        onNavigate={handleSideTabNavigation} 
-        user={user} 
-        onToggle={handleSidebarToggle}
+        onNavigate={handleTabChange}
+        user={user}
+        activeTab={activeTab}
+        onToggle={(isExpanded) => {
+          // Handle sidebar expansion if needed
+          console.log('Sidebar expanded:', isExpanded);
+        }}
       />
       <AppLayout>
         <MainContentWrapper>
           <Header>
-            <HeaderContent sidebarExpanded={sidebarExpanded}>
+            <HeaderContent>
               <Logo src="/assets/logo.png" alt="לוגו החברה" onError={(e) => e.target.style.display = 'none'} />
               <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
               <HeaderSubtitle>כלי מתקדם לחישוב כדאיות השקעה בנכסי נדל"ן ותחזית רווחיות ארוכת טווח</HeaderSubtitle>
@@ -1000,7 +1034,7 @@ const AppInner = () => {
           </Header>
           
           <MainNavbar>
-            <NavContent sidebarExpanded={sidebarExpanded}>
+            <NavContent>
               <NavLinks>
                 <NavLink 
                   className={activeTab === 'calculator' ? 'active' : ''} 
@@ -1040,9 +1074,9 @@ const AppInner = () => {
             </NavContent>
           </MainNavbar>
           
-          <ContentArea sidebarExpanded={sidebarExpanded}>
+          <ContentArea>
             {activeTab === 'calculator' && (
-              <div className="container">
+              <>
                 {notification && (
                   <NotificationBanner success={notification.success}>
                     {notification.message}
@@ -1059,7 +1093,7 @@ const AppInner = () => {
                 />
                 
                 {results && (
-                  <>
+                  <div className="results-container">
                     <ResultsSummary results={results} inputs={inputs} years={inputs.years} />
                     
                     <div className="charts-grid">
@@ -1073,20 +1107,23 @@ const AppInner = () => {
                       years={inputs.years}
                       totalInvestment={results?.totalInvestment}
                     />
-                  </>
+                  </div>
                 )}
-              </div>
+              </>
             )}
 
             {activeTab === 'portfolio-summary' && (
-              <PortfolioSummary />
+              <PortfolioSummary 
+                onNavigateToCalculator={() => handleTabChange('calculator')}
+                onNavigateToPortfolio={() => handleTabChange('portfolio')}
+                onOpenDeal={handleOpenDeal}
+              />
             )}
             
             {activeTab === 'portfolio' && (
               <MyPortfolio 
                 onOpenDeal={handleOpenDeal}
                 onCompareDeals={handleCompareDeals}
-                refreshTrigger={refreshPortfolio}
               />
             )}
             
@@ -1146,7 +1183,9 @@ const AppInner = () => {
 
 const App = () => (
   <BrowserRouter>
-    <AppInner />
+    <DealsProvider>
+      <AppContent />
+    </DealsProvider>
   </BrowserRouter>
 );
 

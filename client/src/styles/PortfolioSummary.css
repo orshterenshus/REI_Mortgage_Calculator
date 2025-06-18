@@ -1,314 +1,615 @@
 /**
  * ========================================
- * סטיילים לרכיב סיכום התיק
+ * סטיילים לרכיב סיכום התיק - Portfolio Overview
  * ========================================
  */
 
-/* מיכל ראשי */
-.portfolio-summary-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+.portfolio-overview {
+  padding: 1rem;
   background: #f8f9fa;
   min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
-/* כותרת */
-.summary-header {
-  text-align: center;
-  margin-bottom: 3rem;
+/* Header */
+.overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.summary-title {
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-}
-
-.summary-subtitle {
-  font-size: 1rem;
-  color: #666;
+.overview-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
   margin: 0;
 }
 
-/* רשת כרטיסי סטטיסטיקה */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
-/* כרטיס סטטיסטיקה */
-.stat-card {
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
   background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Main Grid Layout */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: 1400px;
+}
+
+/* Card Base */
+.card {
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 1.5rem;
-  transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+.card-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
 }
 
-/* אייקון סטטיסטיקה */
-.stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
+.card-subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Tasks Card */
+.tasks-card {
+  grid-row: span 2;
+}
+
+.tasks-list {
+  padding: 0;
+}
+
+.task-item {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.total-properties .stat-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.task-item:last-child {
+  border-bottom: none;
 }
 
-.total-investment .stat-icon {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+.task-icon {
+  font-size: 1.25rem;
+  margin-top: 0.125rem;
 }
 
-.current-value .stat-icon {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
-}
-
-.profit .stat-icon {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  color: white;
-}
-
-/* תוכן סטטיסטיקה */
-.stat-content {
+.task-content {
   flex: 1;
 }
 
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 0.25rem;
-}
-
-.stat-value.profit-positive {
-  color: #28a745;
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  color: #666;
+.task-content h3 {
+  font-size: 0.875rem;
   font-weight: 500;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
 }
 
-/* קטע ROI */
-.roi-section {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 3rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+.task-content p {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.task-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.btn-task {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-task:hover {
+  background: #2563eb;
+}
+
+.show-more {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.875rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.show-more:hover {
+  background: #f9fafb;
+}
+
+/* Performance Card */
+.performance-content {
+  padding: 1.25rem;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.performance-chart {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.chart-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   text-align: center;
 }
 
-.roi-section h3 {
-  font-size: 1.3rem;
-  color: #333;
-  margin-bottom: 2rem;
+.performance-value {
+  font-size: 1.25rem;
   font-weight: 600;
+  color: #111827;
 }
 
-.roi-display {
+.performance-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.performance-stats {
+  flex: 1;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.stat-row span:first-child {
+  color: #6b7280;
+}
+
+.stat-row span:last-child {
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Cash Flow Card */
+.cashflow-summary {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.cashflow-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.cashflow-item span:first-child {
+  color: #6b7280;
+}
+
+.cashflow-item span:last-child {
+  color: #111827;
+  font-weight: 500;
+}
+
+.chart-container {
+  height: 200px;
+  padding: 1rem;
+}
+
+.chart-note {
+  padding: 0.5rem 1.25rem;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* Rent Collection Card */
+.rent-content {
+  padding: 1.25rem;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.rent-chart {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.progress-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(#3b82f6 0deg, #e5e7eb 0deg);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.roi-circle {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
 }
 
-.roi-circle::before {
+.progress-circle::before {
   content: '';
   position: absolute;
-  width: 90px;
-  height: 90px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   background: white;
 }
 
-.roi-percentage {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #333;
+.progress-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #3b82f6;
   position: relative;
   z-index: 1;
 }
 
-.roi-description {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0;
+.progress-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  position: relative;
+  z-index: 1;
 }
 
-/* תצוגת נכסים */
-.properties-preview {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+.rent-stats {
+  flex: 1;
 }
 
-.properties-preview h3 {
-  font-size: 1.3rem;
-  color: #333;
-  margin-bottom: 2rem;
-  font-weight: 600;
+.stat-note {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
 }
 
-.properties-list {
+/* Expenses Card */
+.expenses-content {
+  padding: 1.25rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Portfolio Growth Card */
+.growth-card {
+  grid-column: span 2;
+}
+
+.growth-summary {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
-/* כרטיס נכס */
-.property-card {
+.growth-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.growth-item span:first-child {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.growth-item span:last-child {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+/* Loading and Error States */
+.loading-spinner,
+.error-message {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.property-card:hover {
-  background: #f8f9fa;
-  border-color: var(--primary);
-}
-
-.property-info h4 {
+  justify-content: center;
+  height: 200px;
   font-size: 1rem;
-  color: #333;
-  margin: 0 0 0.5rem 0;
-  font-weight: 600;
-}
-
-.property-price {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0;
-  font-weight: 500;
-}
-
-.roi-badge {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  color: white;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.more-properties {
-  text-align: center;
-  padding: 1rem;
-  color: #666;
-  font-style: italic;
-  font-size: 0.9rem;
-}
-
-/* טעינה ושגיאות */
-.loading-spinner, .error-message {
-  text-align: center;
-  padding: 4rem 2rem;
-  font-size: 1.1rem;
-  color: #666;
+  color: #6b7280;
 }
 
 .error-message {
-  color: #dc3545;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 8px;
+  color: #dc2626;
 }
 
-/* רספונסיב */
-@media (max-width: 768px) {
-  .portfolio-summary-container {
-    padding: 1rem;
-  }
-  
-  .summary-title {
-    font-size: 1.7rem;
-  }
-  
-  .stats-grid {
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .overview-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .growth-card {
+    grid-column: span 1;
+  }
+  
+  .performance-content,
+  .rent-content {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .performance-chart,
+  .rent-chart {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .portfolio-overview {
+    padding: 0.5rem;
+  }
+  
+  .overview-header {
+    flex-direction: column;
     gap: 1rem;
-  }
-  
-  .stat-card {
-    padding: 1.25rem;
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .stat-icon {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .stat-value {
-    font-size: 1.3rem;
-  }
-  
-  .roi-circle {
-    width: 100px;
-    height: 100px;
-  }
-  
-  .roi-circle::before {
-    width: 70px;
-    height: 70px;
-  }
-  
-  .roi-percentage {
-    font-size: 1.2rem;
-  }
-  
-  .property-card {
-    flex-direction: column;
     align-items: stretch;
-    gap: 1rem;
+  }
+  
+  .header-actions {
+    justify-content: center;
+  }
+  
+  .task-item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .task-actions {
+    justify-content: flex-start;
+  }
+  
+  .growth-summary {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .growth-item {
+    flex-direction: row;
+    justify-content: space-between;
   }
 }
 
 @media (max-width: 480px) {
-  .roi-section, .properties-preview {
-    padding: 1.5rem;
+  .card-header {
+    padding: 0.75rem 1rem;
   }
   
-  .property-card {
-    padding: 1rem;
+  .task-item,
+  .performance-content,
+  .rent-content,
+  .cashflow-summary,
+  .expenses-content {
+    padding: 0.75rem 1rem;
   }
+  
+  .chart-container {
+    height: 150px;
+    padding: 0.75rem;
+  }
+}
+
+.stat-card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  direction: ltr;
+}
+
+.stat-content {
+  flex: 1;
+  text-align: right;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.8;
+  margin-left: 15px;
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 5px;
+  direction: ltr;
+  text-align: right;
+}
+
+.stat-label {
+  font-size: 0.95rem;
+  color: #718096;
+  font-weight: 500;
+  text-align: right;
+}
+
+/* תזרים מזומנים */
+.income-expenses-section {
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.cashflow-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.cashflow-card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  direction: ltr;
+}
+
+.cashflow-content {
+  flex: 1;
+  text-align: right;
+}
+
+.cashflow-icon {
+  font-size: 2.5rem;
+  opacity: 0.8;
+  margin-left: 15px;
+  flex-shrink: 0;
+}
+
+.cashflow-amount {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 5px;
+  direction: ltr;
+  text-align: right;
+}
+
+.cashflow-label {
+  font-size: 0.95rem;
+  color: #718096;
+  font-weight: 500;
+  text-align: right;
+}
+
+.cashflow-card.income::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #48bb78 0%, #38a169 100%);
+}
+
+.cashflow-card.neutral::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #4299e1 0%, #3182ce 100%);
+}
+
+.cashflow-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 } 

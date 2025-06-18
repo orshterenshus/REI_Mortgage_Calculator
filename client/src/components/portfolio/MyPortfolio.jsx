@@ -1,6 +1,6 @@
 /**
  * ========================================
- * רכיב התיק האישי (MyPortfolio Component)
+ * רכיב התיק האישי המודרני (Modern Portfolio Component)
  * ========================================
  * 
  * תיאור:
@@ -16,6 +16,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import PropertyMap from '../map/PropertyMap';
+import { useDeals } from '../../contexts/DealsContext';
 import './MyPortfolio.css';
 
 /**
@@ -57,12 +58,12 @@ const formatPercentage = (value) => {
  * רכיב הראשי
  * ========================================
  */
-const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
+const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
+  // השתמש ב-Context לנתונים
+  const { deals, loading, error, refreshDeals } = useDeals();
+  
   // States עיקריים
-  const [deals, setDeals] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('default');
+  const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState({});
   
   // States למצבי השוואה
@@ -74,39 +75,6 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
    * פונקציות לטעינת נתונים
    * ========================================
    */
-
-  /**
-   * טעינת עסקאות מהשרת
-   */
-  const fetchDeals = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('לא נמצא טוקן אימות');
-        return;
-      }
-
-      const response = await axios.get('http://localhost:5000/api/deals/my-deals', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.success) {
-        const dealsData = response.data.deals || [];
-        setDeals(dealsData);
-        calculateStats(dealsData);
-      } else {
-        setError(response.data.error || 'שגיאה בטעינת העסקאות');
-      }
-    } catch (err) {
-      console.error('Error fetching deals:', err);
-      setError('שגיאה בחיבור לשרת');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /**
    * חישוב סטטיסטיקות מפורטות
@@ -221,16 +189,12 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
    * ========================================
    */
 
+  // עדכון סטטיסטיקות כאשר הנתונים משתנים
   useEffect(() => {
-    fetchDeals();
-  }, []);
-
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      console.log('Refresh triggered, fetching new data');
-      fetchDeals();
+    if (Array.isArray(deals)) {
+      calculateStats(deals);
     }
-  }, [refreshTrigger]);
+  }, [deals]);
 
   /**
    * ========================================
@@ -253,9 +217,8 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
       });
 
       if (response.data.success) {
-        const updatedDeals = deals.filter(deal => deal._id !== dealId);
-        setDeals(updatedDeals);
-        calculateStats(updatedDeals);
+        // עדכון ה-Context במקום state מקומי
+        refreshDeals();
       } else {
         setError('שגיאה במחיקת העסקה');
       }
@@ -308,11 +271,52 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
     <div className="portfolio-header">
       <h1 className="portfolio-title">התיק האישי שלי</h1>
       <div className="header-buttons">
-        <button className="header-btn primary">+ הוסף נכס</button>
-        <button className="header-btn secondary">📄 המסמכים שלי</button>
-        <button className="header-btn secondary">🔍 בדיקת לחץ</button>
-        <button className="header-btn secondary">📊 ייצוא</button>
-        <button className="header-btn secondary">📅 הגדרת תאריכי יעד</button>
+        <button 
+          className="header-btn primary"
+          onClick={() => window.location.href = '#calculator'}
+          title="עבור למחשבון להוספת נכס חדש"
+        >
+          + הוסף נכס
+        </button>
+        <button 
+          className="header-btn secondary"
+          onClick={() => setActiveTab('deals')}
+          title="צפה בפרטי עסקאות"
+        >
+          📄 פרטי עסקאות
+        </button>
+        <button 
+          className="header-btn secondary"
+          onClick={() => setActiveTab('performance')}
+          title="צפה בניתוח ביצועים"
+        >
+          📊 ביצועים
+        </button>
+        {isCompareMode ? (
+          <button 
+            className="header-btn tertiary"
+            onClick={toggleCompareMode}
+          >
+            ✕ בטל השוואה
+          </button>
+        ) : (
+          <button 
+            className="header-btn secondary"
+            onClick={toggleCompareMode}
+            disabled={deals.length < 2}
+            title={deals.length < 2 ? 'נדרשות לפחות 2 עסקאות להשוואה' : 'השווה בין עסקאות'}
+          >
+            ⚖️ השווה עסקאות
+          </button>
+        )}
+        {isCompareMode && selectedDeals.length >= 2 && (
+          <button 
+            className="header-btn primary"
+            onClick={handleCompare}
+          >
+            השווה ({selectedDeals.length})
+          </button>
+        )}
       </div>
     </div>
   );
@@ -366,7 +370,7 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
           </div>
         );
         
-      default: // default, deals
+      default: // overview, deals
         return (
           <div className="stats-grid top-stats">
             <div className="stat-card">
@@ -395,7 +399,7 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
    */
   const renderBottomStats = () => {
     // הסטטיסטיקות התחתונות יוצגו רק בטאב ברירת מחדל
-    if (activeTab !== 'default') {
+    if (activeTab !== 'overview') {
       return null;
     }
     
@@ -424,28 +428,22 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
     <div className="tabs-container">
       <div className="tabs">
         <button 
+          className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          נתונים כלליים
+        </button>
+        <button 
           className={`tab ${activeTab === 'map' ? 'active' : ''}`}
           onClick={() => setActiveTab('map')}
         >
           תצוגת מפה
         </button>
         <button 
-          className={`tab ${activeTab === 'default' ? 'active' : ''}`}
-          onClick={() => setActiveTab('default')}
-        >
-          נתונים כלליים
-        </button>
-        <button 
           className={`tab ${activeTab === 'performance' ? 'active' : ''}`}
           onClick={() => setActiveTab('performance')}
         >
           ביצועים
-        </button>
-        <button 
-          className={`tab ${activeTab === 'equity' ? 'active' : ''}`}
-          onClick={() => setActiveTab('equity')}
-        >
-          הון עצמי
         </button>
         <button 
           className={`tab ${activeTab === 'deals' ? 'active' : ''}`}
@@ -668,12 +666,10 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals, refreshTrigger }) => {
     switch (activeTab) {
       case 'map':
         return renderMapView();
-      case 'default':
+      case 'overview':
         return renderDefaultView();
       case 'performance':
         return renderPerformanceView();
-      case 'equity':
-        return renderEquityView();
       case 'deals':
         return renderDealDetailsView();
       default:

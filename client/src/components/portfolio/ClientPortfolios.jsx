@@ -1,6 +1,6 @@
 /**
  * ========================================
- * רכיב תיקי לקוחות (ClientPortfolios Component)
+ * רכיב תיקי לקוחות מודרני (Modern Client Portfolios)
  * ========================================
  * 
  * תיאור:
@@ -19,7 +19,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../../styles/portfolio/ClientPortfolios.css';
+import './ClientPortfolios.css';
 
 /**
  * ========================================
@@ -133,6 +133,7 @@ const ClientPortfolios = ({ onOpenDeal, onViewClientPortfolio }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('totalValue'); // totalValue, name, deals, yield
 
   /**
    * טעינת תיקי לקוחות מהשרת
@@ -194,9 +195,10 @@ const ClientPortfolios = ({ onOpenDeal, onViewClientPortfolio }) => {
   // מצב טעינה
   if (loading) {
     return (
-      <div className="portfolios-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+      <div className="client-portfolios-container">
+        <div className="loading-section">
+          <div className="loading-spinner"></div>
+          <p>טוען תיקי לקוחות...</p>
         </div>
       </div>
     );
@@ -205,50 +207,114 @@ const ClientPortfolios = ({ onOpenDeal, onViewClientPortfolio }) => {
   // מצב שגיאה
   if (error) {
     return (
-      <div className="portfolios-container">
-        <div className="error-message">{error}</div>
+      <div className="client-portfolios-container">
+        <div className="error-section">
+          <div className="error-icon">⚠️</div>
+          <h2>שגיאה בטעינת תיקי הלקוחות</h2>
+          <p>{error}</p>
+          <button className="btn-primary" onClick={fetchClientPortfolios}>
+            נסה שוב
+          </button>
+        </div>
       </div>
     );
   }
 
+  // סינון וסידור לקוחות
+  const filteredAndSortedClients = filteredClients
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return (a.fullName || a._id).localeCompare(b.fullName || b._id);
+        case 'deals':
+          return b.totalDeals - a.totalDeals;
+        case 'yield':
+          return calculateAverageYield(b.deals) - calculateAverageYield(a.deals);
+        case 'totalValue':
+        default:
+          return calculateTotalPropertyValue(b.deals) - calculateTotalPropertyValue(a.deals);
+      }
+    });
+
+  // חישוב סטטיסטיקות כלליות
+  const totalClients = clients.length;
+  const totalDeals = clients.reduce((sum, client) => sum + client.totalDeals, 0);
+  const totalPortfolioValue = clients.reduce((sum, client) => 
+    sum + calculateTotalPropertyValue(client.deals), 0);
+  const totalInvestment = clients.reduce((sum, client) => 
+    sum + calculateTotalInvestment(client.deals), 0);
+
   return (
-    <div className="portfolios-container">
+    <div className="client-portfolios-container">
+      
+      {/* כותרת ראשית */}
       <div className="portfolios-header">
-        <h2 className="portfolios-title">תיקי לקוחות</h2>
-        <div className="header-actions">
-          <input
-            type="text"
-            className="search-box"
-            placeholder="חיפוש לקוח (שם או מייל)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="header-content">
+          <h1>ניהול תיקי לקוחות</h1>
+          <p>מערכת ניהול מתקדמת לכל תיקי הלקוחות במערכת</p>
+        </div>
+        
+        <div className="header-stats">
+          <div className="stat-item">
+            <span className="stat-value">{totalClients}</span>
+            <span className="stat-label">לקוחות פעילים</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value">{totalDeals}</span>
+            <span className="stat-label">עסקאות כולל</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value">{formatCurrency(totalPortfolioValue)}</span>
+            <span className="stat-label">שווי כולל</span>
+          </div>
         </div>
       </div>
 
-      {filteredClients.length === 0 ? (
+      {/* כלי ניהול */}
+      <div className="management-tools">
+        <div className="search-section">
+          <div className="search-input-wrapper">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="חפש לקוח לפי שם או אימייל..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+        </div>
+
+        <div className="sort-section">
+          <label htmlFor="sort-select">מיין לפי:</label>
+          <select
+            id="sort-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="sort-select"
+          >
+            <option value="totalValue">שווי תיק</option>
+            <option value="name">שם לקוח</option>
+            <option value="deals">מספר עסקאות</option>
+            <option value="yield">תשואה ממוצעת</option>
+          </select>
+        </div>
+      </div>
+
+      {/* רשימת לקוחות */}
+      {filteredAndSortedClients.length === 0 ? (
         <div className="empty-state">
-          {searchTerm ? (
-            <>
-              <h3>לא נמצאו לקוחות</h3>
-              <p>נסה לשנות את מילות החיפוש</p>
-            </>
-          ) : (
-            <>
-              <h3>אין לקוחות עם עסקאות</h3>
-              <p>כשלקוחות יבצעו חישובים, הם יופיעו כאן</p>
-            </>
-          )}
+          <div className="empty-icon">👥</div>
+          <h3>לא נמצאו לקוחות</h3>
+          <p>אין לקוחות התואמים לחיפוש שלך</p>
         </div>
       ) : (
         <div className="clients-grid">
-          {filteredClients.map((client) => {
+          {filteredAndSortedClients.map((client) => {
+            const totalValue = calculateTotalPropertyValue(client.deals);
             const totalInvestment = calculateTotalInvestment(client.deals);
-            const totalPropertyValue = calculateTotalPropertyValue(client.deals);
-            const totalMonthlyRent = calculateTotalMonthlyRent(client.deals);
-            const averageYield = calculateAverageYield(client.deals);
-            const lastDeal = client.deals.length > 0 ? 
-              client.deals.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] : null;
+            const monthlyRent = calculateTotalMonthlyRent(client.deals);
+            const avgYield = calculateAverageYield(client.deals);
 
             return (
               <div 
@@ -256,50 +322,74 @@ const ClientPortfolios = ({ onOpenDeal, onViewClientPortfolio }) => {
                 className="client-card"
                 onClick={() => handleClientClick(client)}
               >
-                <div className="client-content">
-                  <h3 className="client-title">
-                    {client.fullName || client._id}
-                  </h3>
-                  
-                  <div className="client-email">{client._id}</div>
-                  
-                  <div className="client-details">
-                    <div className="detail-item">
-                      <span className="label">מספר נכסים</span>
-                      <span className="value">{client.deals.length}</span>
-                    </div>
-                    
-                    {totalPropertyValue > 0 && (
-                      <div className="detail-item">
-                        <span className="label">ערך נכסים</span>
-                        <span className="value">{formatCurrency(totalPropertyValue)}</span>
-                      </div>
-                    )}
-                    
-                    {totalInvestment > 0 && (
-                      <div className="detail-item">
-                        <span className="label">הון עצמי</span>
-                        <span className="value">{formatCurrency(totalInvestment)}</span>
-                      </div>
-                    )}
-                    
-                    {totalMonthlyRent > 0 && (
-                      <div className="detail-item">
-                        <span className="label">הכנסה חודשית</span>
-                        <span className="value">{formatCurrency(totalMonthlyRent)}</span>
-                      </div>
-                    )}
+                
+                {/* כותרת לקוח */}
+                <div className="client-header">
+                  <div className="client-avatar">
+                    {client.fullName ? client.fullName.charAt(0) : client._id.charAt(0)}
                   </div>
-                  
-                  <div className="client-date">
-                    {lastDeal ? `עסקה אחרונה: ${formatDate(lastDeal.createdAt)}` : 'אין עסקאות'}
+                  <div className="client-info">
+                    <h3>{client.fullName || 'לא נרשם שם'}</h3>
+                    <p className="client-email">{client._id}</p>
+                  </div>
+                  <div className="client-badge">
+                    {client.totalDeals} עסקאות
                   </div>
                 </div>
+
+                {/* מטריקות לקוח */}
+                <div className="client-metrics">
+                  <div className="metric-row">
+                    <div className="metric">
+                      <span className="metric-label">שווי תיק:</span>
+                      <span className="metric-value primary">{formatCurrency(totalValue)}</span>
+                    </div>
+                    <div className="metric">
+                      <span className="metric-label">השקעה:</span>
+                      <span className="metric-value">{formatCurrency(totalInvestment)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="metric-row">
+                    <div className="metric">
+                      <span className="metric-label">הכנסה חודשית:</span>
+                      <span className="metric-value success">{formatCurrency(monthlyRent)}</span>
+                    </div>
+                    <div className="metric">
+                      <span className="metric-label">תשואה ממוצעת:</span>
+                      <span className="metric-value accent">{formatPercentage(avgYield)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* עסקאות אחרונות */}
+                <div className="recent-deals">
+                  <h4>עסקאות אחרונות</h4>
+                  {client.deals.slice(0, 2).map((deal, index) => (
+                    <div key={index} className="deal-preview">
+                      <span className="deal-address">{deal.address || 'כתובת לא זמינה'}</span>
+                      <span className="deal-value">{formatCurrency(deal.propertyValue)}</span>
+                    </div>
+                  ))}
+                  {client.totalDeals > 2 && (
+                    <p className="more-deals">ועוד {client.totalDeals - 2} עסקאות...</p>
+                  )}
+                </div>
+
+                {/* כפתור פעולה */}
+                <div className="card-action">
+                  <button className="view-portfolio-btn">
+                    <span className="btn-icon">👁️</span>
+                    צפה בתיק המלא
+                  </button>
+                </div>
+
               </div>
             );
           })}
         </div>
       )}
+
     </div>
   );
 };

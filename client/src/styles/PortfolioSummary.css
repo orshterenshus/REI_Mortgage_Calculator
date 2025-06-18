@@ -478,7 +478,8 @@
   }
 }
 
-.stat-card {
+.stat-card,
+.cashflow-card {
   background: white;
   padding: 25px;
   border-radius: 15px;
@@ -493,28 +494,31 @@
   direction: ltr;
 }
 
-.stat-content {
+.stat-content,
+.cashflow-content {
   flex: 1;
   text-align: right;
 }
 
-.stat-icon {
+.stat-icon,
+.cashflow-icon {
   font-size: 2.5rem;
   opacity: 0.8;
   margin-left: 15px;
   flex-shrink: 0;
 }
 
-.stat-value {
+.stat-value,
+.cashflow-amount {
   font-size: 1.8rem;
   font-weight: 700;
   color: #2d3748;
   margin-bottom: 5px;
-  direction: ltr;
   text-align: right;
 }
 
-.stat-label {
+.stat-label,
+.cashflow-label {
   font-size: 0.95rem;
   color: #718096;
   font-weight: 500;
@@ -531,6 +535,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  direction: rtl;
 }
 
 .section-header h2 {
@@ -544,49 +549,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
-}
-
-.cashflow-card {
-  background: white;
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  direction: ltr;
-}
-
-.cashflow-content {
-  flex: 1;
-  text-align: right;
-}
-
-.cashflow-icon {
-  font-size: 2.5rem;
-  opacity: 0.8;
-  margin-left: 15px;
-  flex-shrink: 0;
-}
-
-.cashflow-amount {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #2d3748;
-  margin-bottom: 5px;
-  direction: ltr;
-  text-align: right;
-}
-
-.cashflow-label {
-  font-size: 0.95rem;
-  color: #718096;
-  font-weight: 500;
-  text-align: right;
 }
 
 .cashflow-card.income::before {
@@ -612,4 +574,9 @@
 .cashflow-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-summary-container .section-header {
+  direction: rtl !important;
+  justify-content: space-between;
 } 

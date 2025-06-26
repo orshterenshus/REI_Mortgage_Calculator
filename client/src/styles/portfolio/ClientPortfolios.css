@@ -46,8 +46,8 @@
 
 .search-box:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
 }
 
 .search-box::placeholder {
@@ -74,7 +74,7 @@
 .client-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary);
+  border-color: #ffd700;
 }
 
 /* תוכן הלקוח */
@@ -165,7 +165,7 @@
   width: 48px;
   height: 48px;
   border: 4px solid #eee;
-  border-top-color: var(--primary);
+  border-top-color: #ffd700;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -223,7 +223,7 @@
 
 /* כפתור מסנן */
 .filter-button {
-  background-color: var(--primary);
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
   color: white;
   border: none;
   border-radius: 6px;
@@ -231,15 +231,18 @@
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 
 .filter-button:hover {
-  background-color: var(--primary-dark);
+  background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%);
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 215, 0, 0.4);
 }
 
 .deals-grid .deal-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary);
+  border-color: #ffd700;
 } 

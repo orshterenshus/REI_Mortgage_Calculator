@@ -11,10 +11,12 @@
    מיכל ראשי
    ======================================== */
 .portfolio-container {
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
-  padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  padding: 30px;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  direction: rtl;
+  color: #1a202c;
 }
 
 /* ========================================
@@ -24,17 +26,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   background: white;
-  padding: 20px 30px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
 }
 
 .portfolio-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #2c3e50;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
 }
 
@@ -44,37 +50,61 @@
 }
 
 .header-btn {
-  padding: 10px 18px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  padding: 12px 24px !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-family: inherit !important;
+  position: relative !important;
+  overflow: hidden !important;
+  color: white !important;
 }
 
 .header-btn.primary {
-  background-color: #f39c12;
-  color: white;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%) !important;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3) !important;
 }
 
 .header-btn.primary:hover {
-  background-color: #e67e22;
-  transform: translateY(-1px);
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4) !important;
+  background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%) !important;
 }
 
 .header-btn.secondary {
-  background-color: #ecf0f1;
-  color: #5a6c7d;
-  border: 1px solid #d5dbdb;
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%) !important;
+  box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3) !important;
 }
 
 .header-btn.secondary:hover {
-  background-color: #d5dbdb;
-  color: #2c3e50;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(66, 153, 225, 0.4) !important;
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%) !important;
+}
+
+.header-btn.tertiary {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
+  box-shadow: 0 8px 20px rgba(229, 62, 62, 0.3) !important;
+}
+
+.header-btn.tertiary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(229, 62, 62, 0.4) !important;
+  background: linear-gradient(135deg, #c53030 0%, #a02622 100%) !important;
+}
+
+.header-btn:disabled {
+  background: #e2e8f0 !important;
+  color: #a0aec0 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* ========================================
@@ -89,32 +119,34 @@
 
 .stat-card {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
   text-align: center;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
 
 .stat-label {
-  font-size: 0.85rem;
-  color: #7f8c8d;
-  margin-bottom: 8px;
+  font-size: 0.95rem;
+  color: #718096;
+  margin-bottom: 10px;
   font-weight: 500;
 }
 
 .stat-value {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #2d3748;
 }
 
 .stat-value.blue {
-  color: #3498db;
+  color: #4299e1;
 }
 
 .stat-value.pink {
@@ -122,7 +154,7 @@
 }
 
 .stat-value.negative {
-  color: #e74c3c;
+  color: #e53e3e;
 }
 
 /* ========================================
@@ -134,9 +166,10 @@
   align-items: center;
   background: white;
   padding: 0;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  margin-bottom: 25px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 30px;
   overflow: hidden;
 }
 
@@ -145,26 +178,29 @@
 }
 
 .tab {
-  padding: 15px 25px;
-  border: none;
-  background: transparent;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #7f8c8d;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-bottom: 3px solid transparent;
+  padding: 15px 25px !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  color: #718096 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border-bottom: 3px solid transparent !important;
+  position: relative !important;
+  font-family: inherit !important;
 }
 
 .tab:hover {
-  color: #2c3e50;
-  background-color: #f8f9fa;
+  color: #2d3748 !important;
+  background-color: #f7fafc !important;
 }
 
 .tab.active {
-  color: #3498db;
-  border-bottom-color: #3498db;
-  background-color: #f8f9fa;
+  color: #ffd700 !important;
+  border-bottom-color: #ffd700 !important;
+  background-color: #fffef7 !important;
+  font-weight: 600 !important;
 }
 
 .tab-actions {
@@ -172,19 +208,23 @@
 }
 
 .manage-views-btn {
-  background: transparent;
-  border: 1px solid #d5dbdb;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  color: #7f8c8d;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%) !important;
+  border: none !important;
+  padding: 12px 20px !important;
+  border-radius: 12px !important;
+  font-size: 1rem !important;
+  color: white !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3) !important;
 }
 
 .manage-views-btn:hover {
-  background-color: #ecf0f1;
-  color: #2c3e50;
+  background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4) !important;
 }
 
 /* ========================================
@@ -192,8 +232,9 @@
    ======================================== */
 .tab-content {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
   overflow: hidden;
 }
 
@@ -457,4 +498,88 @@ tr:last-child td {
   .map-container {
     height: 300px;
   }
+}
+
+/* ========================================
+   תיקונים חזקים לכפתורים - MyPortfolio
+   ======================================== */
+div.portfolio-container button.header-btn.primary,
+.portfolio-container .header-btn.primary,
+button[class*="header-btn"][class*="primary"] {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3) !important;
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-family: inherit !important;
+}
+
+div.portfolio-container button.header-btn.primary:hover,
+.portfolio-container .header-btn.primary:hover,
+button[class*="header-btn"][class*="primary"]:hover {
+  background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4) !important;
+}
+
+div.portfolio-container button.header-btn.secondary,
+.portfolio-container .header-btn.secondary,
+button[class*="header-btn"][class*="secondary"] {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3) !important;
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-family: inherit !important;
+}
+
+div.portfolio-container button.header-btn.secondary:hover,
+.portfolio-container .header-btn.secondary:hover,
+button[class*="header-btn"][class*="secondary"]:hover {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(66, 153, 225, 0.4) !important;
+}
+
+div.portfolio-container button.header-btn.tertiary,
+.portfolio-container .header-btn.tertiary,
+button[class*="header-btn"][class*="tertiary"] {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(229, 62, 62, 0.3) !important;
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-family: inherit !important;
+}
+
+div.portfolio-container button.header-btn.tertiary:hover,
+.portfolio-container .header-btn.tertiary:hover,
+button[class*="header-btn"][class*="tertiary"]:hover {
+  background: linear-gradient(135deg, #c53030 0%, #a02622 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(229, 62, 62, 0.4) !important;
 } 

@@ -438,6 +438,61 @@ table td.profit-value {
 }
 
 table td.loss-value {
-  color: var(--error);
-  font-weight: 600;
+  color: var(--error) !important;
+}
+
+/* ========================================
+   כפתורי MyPortfolio - כללים חזקים
+   ======================================== */
+.portfolio-container .header-btn.primary {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3) !important;
+}
+
+.portfolio-container .header-btn.primary:hover {
+  background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4) !important;
+}
+
+.portfolio-container .header-btn.secondary {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3) !important;
+}
+
+.portfolio-container .header-btn.secondary:hover {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(66, 153, 225, 0.4) !important;
+}
+
+.portfolio-container .header-btn.tertiary {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(229, 62, 62, 0.3) !important;
+}
+
+.portfolio-container .header-btn.tertiary:hover {
+  background: linear-gradient(135deg, #c53030 0%, #a02622 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(229, 62, 62, 0.4) !important;
+}
+
+.portfolio-container .manage-views-btn {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%) !important;
+  color: white !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3) !important;
+}
+
+.portfolio-container .manage-views-btn:hover {
+  background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4) !important;
 } 

@@ -166,7 +166,7 @@ const PortfolioSummary = ({ onNavigateToCalculator, onNavigateToPortfolio, onOpe
       {/* הכנסות והוצאות */}
       <div className="income-expenses-section">
         
-        <div className="section-header">
+        <div className="section-header-rtl">
           <h2>תזרים מזומנים חודשי</h2>
         </div>
 
@@ -202,8 +202,8 @@ const PortfolioSummary = ({ onNavigateToCalculator, onNavigateToPortfolio, onOpe
       <div className="properties-section">
         
         <div className="section-header">
-          <h2>הנכסים שלי</h2>
           <button className="add-property-btn" onClick={handleAddProperty}>+ הוסף נכס</button>
+          <h2>הנכסים שלי</h2>
         </div>
 
         {!Array.isArray(deals) || deals.length === 0 ? (

@@ -578,5 +578,38 @@
 
 .portfolio-summary-container .section-header {
   direction: rtl !important;
-  justify-content: space-between;
+  justify-content: flex-start !important;
+  text-align: right !important;
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 25px !important;
+}
+
+.portfolio-summary-container .section-header h2 {
+  margin: 0 !important;
+  text-align: right !important;
+  width: 100% !important;
+  order: 1 !important;
+}
+
+.portfolio-summary-container .section-header button {
+  order: 2 !important;
+  margin-left: auto !important;
+}
+
+.section-header-rtl {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 25px;
+  text-align: right;
+  direction: rtl;
+}
+
+.section-header-rtl h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2d3748;
+  text-align: right;
 } 

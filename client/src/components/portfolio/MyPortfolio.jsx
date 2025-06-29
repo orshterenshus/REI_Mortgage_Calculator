@@ -276,28 +276,32 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
           onClick={() => window.location.href = '#calculator'}
           title="עבור למחשבון להוספת נכס חדש"
         >
-          + הוסף נכס
+          <span className="btn-icon">🏠</span>
+          הוסף נכס
         </button>
         <button 
           className="header-btn secondary"
           onClick={() => setActiveTab('deals')}
           title="צפה בפרטי עסקאות"
         >
-          📄 פרטי עסקאות
+          <span className="btn-icon">📋</span>
+          פרטי עסקאות
         </button>
         <button 
           className="header-btn secondary"
           onClick={() => setActiveTab('performance')}
           title="צפה בניתוח ביצועים"
         >
-          📊 ביצועים
+          <span className="btn-icon">📈</span>
+          ביצועים
         </button>
         {isCompareMode ? (
           <button 
             className="header-btn tertiary"
             onClick={toggleCompareMode}
           >
-            ✕ בטל השוואה
+            <span className="btn-icon">✕</span>
+            בטל השוואה
           </button>
         ) : (
           <button 
@@ -306,7 +310,8 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
             disabled={deals.length < 2}
             title={deals.length < 2 ? 'נדרשות לפחות 2 עסקאות להשוואה' : 'השווה בין עסקאות'}
           >
-            ⚖️ השווה עסקאות
+            <span className="btn-icon">⚖️</span>
+            השווה עסקאות
           </button>
         )}
         {isCompareMode && selectedDeals.length >= 2 && (
@@ -314,6 +319,7 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
             className="header-btn primary"
             onClick={handleCompare}
           >
+            <span className="btn-icon">🔍</span>
             השווה ({selectedDeals.length})
           </button>
         )}
@@ -431,29 +437,36 @@ const MyPortfolio = ({ onOpenDeal, onCompareDeals }) => {
           className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
+          <span className="tab-icon">📊</span>
           נתונים כלליים
         </button>
         <button 
           className={`tab ${activeTab === 'map' ? 'active' : ''}`}
           onClick={() => setActiveTab('map')}
         >
+          <span className="tab-icon">🗺️</span>
           תצוגת מפה
         </button>
         <button 
           className={`tab ${activeTab === 'performance' ? 'active' : ''}`}
           onClick={() => setActiveTab('performance')}
         >
+          <span className="tab-icon">📈</span>
           ביצועים
         </button>
         <button 
           className={`tab ${activeTab === 'deals' ? 'active' : ''}`}
           onClick={() => setActiveTab('deals')}
         >
+          <span className="tab-icon">📋</span>
           פרטי עסקאות
         </button>
       </div>
       <div className="tab-actions">
-        <button className="manage-views-btn">⚙️ ניהול תצוגות</button>
+        <button className="manage-views-btn">
+          <span className="btn-icon">⚙️</span>
+          ניהול תצוגות
+        </button>
       </div>
     </div>
   );

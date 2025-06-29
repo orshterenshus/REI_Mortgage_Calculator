@@ -37,22 +37,26 @@
 .portfolio-title {
   font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  color: var(--text-dark);
+  margin-bottom: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0;
 }
 
 .header-buttons {
   display: flex;
-  gap: 12px;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .header-btn {
   padding: 12px 24px !important;
   border: none !important;
-  border-radius: 12px !important;
+  border-radius: 25px !important;
   font-size: 1rem !important;
   font-weight: 600 !important;
   cursor: pointer !important;
@@ -64,15 +68,19 @@
   position: relative !important;
   overflow: hidden !important;
   color: white !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+  min-width: 140px !important;
+  justify-content: center !important;
 }
 
 .header-btn.primary {
   background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%) !important;
   box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3) !important;
+  color: white !important;
 }
 
 .header-btn.primary:hover {
-  transform: translateY(-2px) !important;
+  transform: translateY(-3px) !important;
   box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4) !important;
   background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%) !important;
 }
@@ -80,10 +88,11 @@
 .header-btn.secondary {
   background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%) !important;
   box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3) !important;
+  color: white !important;
 }
 
 .header-btn.secondary:hover {
-  transform: translateY(-2px) !important;
+  transform: translateY(-3px) !important;
   box-shadow: 0 12px 30px rgba(66, 153, 225, 0.4) !important;
   background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%) !important;
 }
@@ -91,20 +100,40 @@
 .header-btn.tertiary {
   background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
   box-shadow: 0 8px 20px rgba(229, 62, 62, 0.3) !important;
+  color: white !important;
 }
 
 .header-btn.tertiary:hover {
-  transform: translateY(-2px) !important;
+  transform: translateY(-3px) !important;
   box-shadow: 0 12px 30px rgba(229, 62, 62, 0.4) !important;
   background: linear-gradient(135deg, #c53030 0%, #a02622 100%) !important;
 }
 
 .header-btn:disabled {
-  background: #e2e8f0 !important;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%) !important;
   color: #a0aec0 !important;
   cursor: not-allowed !important;
   transform: none !important;
-  box-shadow: none !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* אפקט ריפל לכפתורים */
+.header-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.header-btn:active::before {
+  width: 100px;
+  height: 100px;
 }
 
 /* ========================================
@@ -189,11 +218,15 @@
   border-bottom: 3px solid transparent !important;
   position: relative !important;
   font-family: inherit !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
 }
 
 .tab:hover {
   color: #2d3748 !important;
   background-color: #f7fafc !important;
+  transform: translateY(-2px) !important;
 }
 
 .tab.active {
@@ -201,6 +234,11 @@
   border-bottom-color: #ffd700 !important;
   background-color: #fffef7 !important;
   font-weight: 600 !important;
+  transform: translateY(-2px) !important;
+}
+
+.tab.active .tab-icon {
+  transform: scale(1.1);
 }
 
 .tab-actions {
@@ -211,20 +249,25 @@
   background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%) !important;
   border: none !important;
   padding: 12px 20px !important;
-  border-radius: 12px !important;
+  border-radius: 25px !important;
   font-size: 1rem !important;
   color: white !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
   font-weight: 600 !important;
   font-family: inherit !important;
-  box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3) !important;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3) !important;
+  min-width: 140px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
 }
 
 .manage-views-btn:hover {
   background: linear-gradient(135deg, #ffb700 0%, #ff9500 100%) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4) !important;
 }
 
 /* ========================================
@@ -582,4 +625,221 @@ button[class*="header-btn"][class*="tertiary"]:hover {
   background: linear-gradient(135deg, #c53030 0%, #a02622 100%) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 12px 30px rgba(229, 62, 62, 0.4) !important;
+}
+
+/* עיצוב אייקונים בכפתורים וטאבים */
+.btn-icon {
+  font-size: 1.2rem;
+  margin-left: 5px;
+  transition: transform 0.3s ease;
+}
+
+.header-btn:hover .btn-icon {
+  transform: scale(1.1);
+}
+
+.tab-icon {
+  font-size: 1.1rem;
+  margin-left: 8px;
+  transition: transform 0.3s ease;
+}
+
+.tab:hover .tab-icon {
+  transform: scale(1.05);
+}
+
+.tab.active .tab-icon {
+  transform: scale(1.1);
+}
+
+/* עיצוב דף התיק שלי */
+.my-portfolio {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  direction: rtl;
+}
+
+/* כפתורי פעולות עליונים - עיצוב צבעוני */
+.portfolio-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.action-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 150px;
+  justify-content: center;
+}
+
+.action-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.action-button:active {
+  transform: translateY(-1px);
+}
+
+/* כפתור הוסף נכס */
+.action-button:nth-child(1) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.action-button:nth-child(1):hover {
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+/* כפתור פרטי עסקאות */
+.action-button:nth-child(2) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+}
+
+.action-button:nth-child(2):hover {
+  box-shadow: 0 8px 25px rgba(240, 147, 251, 0.6);
+}
+
+/* כפתור ביצועים */
+.action-button:nth-child(3) {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+}
+
+.action-button:nth-child(3):hover {
+  box-shadow: 0 8px 25px rgba(79, 172, 254, 0.6);
+}
+
+/* כפתור השוואת עסקאות */
+.action-button:nth-child(4) {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
+}
+
+.action-button:nth-child(4):hover {
+  box-shadow: 0 8px 25px rgba(67, 233, 123, 0.6);
+}
+
+/* תוכן התיק */
+.portfolio-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* טאבים - עיצוב צבעוני */
+.portfolio-tabs {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab-button {
+  background: transparent;
+  border: none;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-light);
+  border-bottom: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.tab-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.tab-button:hover::before {
+  opacity: 0.1;
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border-bottom-color: var(--secondary);
+}
+
+.tab-button.active::before {
+  opacity: 1;
+}
+
+/* תוכן הטאב */
+.tab-content {
+  padding: 2rem;
+  min-height: 400px;
+}
+
+/* רספונסיביות */
+@media (max-width: 768px) {
+  .my-portfolio {
+    padding: 1rem;
+  }
+  
+  .portfolio-title {
+    font-size: 2rem;
+  }
+  
+  .portfolio-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .action-button {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .portfolio-tabs {
+    flex-direction: column;
+  }
+  
+  .tab-button {
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    border-left: 3px solid transparent;
+  }
+  
+  .tab-button.active {
+    border-bottom-color: var(--border);
+    border-left-color: var(--primary);
+  }
 } 

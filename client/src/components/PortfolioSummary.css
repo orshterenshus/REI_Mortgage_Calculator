@@ -189,21 +189,26 @@
 }
 
 .add-property-btn {
-  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  font-size: 1rem;
+  padding: 0.85rem 2rem;
+  border-radius: 4px;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
 }
 
 .add-property-btn:hover {
+  background: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* תיק ריק */
@@ -234,21 +239,26 @@
 }
 
 .start-btn {
-  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 15px 30px;
-  border-radius: 25px;
+  padding: 0.85rem 2rem;
+  border-radius: 4px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
 }
 
 .start-btn:hover {
+  background: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* רשת נכסים */
@@ -273,7 +283,7 @@
 }
 
 .property-header {
-  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  background: var(--primary);
   color: white;
   padding: 20px;
   display: flex;
@@ -343,28 +353,45 @@
 
 .action-btn {
   flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #e2e8f0;
+  padding: 12px 20px;
+  border: none;
   background: white;
-  border-radius: 8px;
+  border-radius: 25px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .action-btn.view {
-  color: #4299e1;
-  border-color: #4299e1;
+  background: var(--secondary);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn.edit {
-  color: #ed8936;
-  border-color: #ed8936;
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.action-btn.view:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background: var(--secondary-dark);
+}
+
+.action-btn.edit:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background: var(--primary-dark);
 }
 
 /* מצבי טעינה ושגיאה */
@@ -424,7 +451,7 @@
 }
 
 .retry-btn {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -433,11 +460,17 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
 }
 
 .retry-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(229, 62, 62, 0.3);
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(66, 153, 225, 0.4);
 }
 
 /* רספונסיבי */
@@ -486,4 +519,17 @@
   0% { opacity: 0.7; }
   50% { opacity: 1; }
   100% { opacity: 0.7; }
+}
+
+/* עיצוב אייקונים בכפתורים */
+.btn-icon {
+  font-size: 1.1rem;
+  margin-left: 6px;
+  transition: transform 0.3s ease;
+}
+
+.add-property-btn:hover .btn-icon,
+.start-btn:hover .btn-icon,
+.action-btn:hover .btn-icon {
+  transform: scale(1.1);
 } 

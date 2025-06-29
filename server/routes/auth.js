@@ -154,7 +154,7 @@ router.post('/login', [
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '2h' });
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '8h' });
     res.json({ token, user: { email: user.email, role: user.role, fullName: user.fullName } });
   } catch (err) {
     res.status(500).json({ message: err.message });

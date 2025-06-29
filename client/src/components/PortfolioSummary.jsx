@@ -101,7 +101,10 @@ const PortfolioSummary = ({ onNavigateToCalculator, onNavigateToPortfolio, onOpe
       <div className="portfolio-error">
         <div className="error-icon">⚠️</div>
         <p>{error}</p>
-        <button onClick={refreshDeals} className="retry-btn">נסה שוב</button>
+        <button onClick={refreshDeals} className="retry-btn">
+          <span className="btn-icon">🔄</span>
+          נסה שוב
+        </button>
       </div>
     );
   }
@@ -202,7 +205,10 @@ const PortfolioSummary = ({ onNavigateToCalculator, onNavigateToPortfolio, onOpe
       <div className="properties-section">
         
         <div className="section-header">
-          <button className="add-property-btn" onClick={handleAddProperty}>+ הוסף נכס</button>
+          <button className="add-property-btn" onClick={handleAddProperty}>
+            <span className="btn-icon">🏠</span>
+            הוסף נכס
+          </button>
           <h2>הנכסים שלי</h2>
         </div>
 
@@ -211,7 +217,10 @@ const PortfolioSummary = ({ onNavigateToCalculator, onNavigateToPortfolio, onOpe
             <div className="empty-icon">🏘️</div>
             <h3>התיק שלך ריק</h3>
             <p>התחל בהוספת הנכס הראשון שלך</p>
-            <button className="start-btn" onClick={handleAddProperty}>התחל עכשיו</button>
+            <button className="start-btn" onClick={handleAddProperty}>
+              <span className="btn-icon">🚀</span>
+              התחל עכשיו
+            </button>
           </div>
         ) : (
           <div className="properties-grid">

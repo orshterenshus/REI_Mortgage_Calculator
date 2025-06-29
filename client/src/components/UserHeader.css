@@ -1,0 +1,236 @@
+/* Header עליון עם תפריט משתמש */
+.user-header {
+  background: var(--primary);
+  color: white;
+  padding: 2rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1000;
+}
+
+.header-container {
+  width: 100%;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.header-content {
+  position: absolute;
+  right: 110px; /* יותר רחוק מהקצה */
+  display: flex;
+  align-items: center;
+}
+
+.header-logo {
+  height: 45px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+/* תפריט משתמש - יותר רחוק מהקצה השמאלי */
+.user-menu-container {
+  position: absolute;
+  left: 20px; /* יותר רחוק מהקצה */
+}
+
+.user-menu-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.user-menu-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.user-icon {
+  font-size: 1.4rem;
+  color: white;
+}
+
+/* תפריט נפתח */
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  z-index: 1001;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-info {
+  padding: 1rem;
+  background: #f8f9fa;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.user-email {
+  color: var(--text-light);
+  font-size: 0.85rem;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+
+.logout-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--error);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: right;
+  direction: rtl;
+}
+
+.logout-button:hover {
+  background: #fee;
+}
+
+.logout-icon {
+  font-size: 1rem;
+}
+
+/* רספונסיביות למסכים קטנים מאוד */
+@media (max-width: 480px) {
+  .user-header {
+    padding: 1rem 0;
+  }
+  
+  .header-content {
+    right: 60px; /* קרוב יותר לימין במסכים קטנים */
+  }
+  
+  .user-menu-container {
+    left: 15px;
+  }
+  
+  .header-logo {
+    height: 32px;
+  }
+  
+  .user-menu-button {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .user-icon {
+    font-size: 1.1rem;
+  }
+  
+  .user-dropdown {
+    min-width: 180px;
+    left: -10px;
+  }
+}
+
+/* רספונסיביות למסכים בינוניים */
+@media (max-width: 768px) and (min-width: 481px) {
+  .user-header {
+    padding: 1.5rem 0;
+  }
+  
+  .header-content {
+    right: 80px; /* מיקום בינוני */
+  }
+  
+  .user-menu-container {
+    left: 25px;
+  }
+  
+  .header-logo {
+    height: 40px;
+  }
+  
+  .user-menu-button {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .user-icon {
+    font-size: 1.3rem;
+  }
+  
+  .user-dropdown {
+    min-width: 200px;
+    left: 0;
+  }
+}
+
+/* רספונסיביות למסכים גדולים */
+@media (min-width: 1200px) {
+  .header-content {
+    right: 150px; /* יותר שמאלה במסכים גדולים */
+  }
+  
+  .user-menu-container {
+    left: 50px;
+  }
+}
+
+/* רספונסיביות למסכים גדולים מאוד */
+@media (min-width: 1400px) {
+  .header-content {
+    right: 180px; /* עוד יותר שמאלה במסכים גדולים מאוד */
+  }
+  
+  .user-menu-container {
+    left: 60px;
+  }
+  
+  .header-logo {
+    height: 50px;
+  }
+  
+  .user-menu-button {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .user-icon {
+    font-size: 1.5rem;
+  }
+}

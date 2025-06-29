@@ -62,6 +62,7 @@ import DealViewer from './components/deals/DealViewer';
 import ClientPortfolioView from './components/portfolio/ClientPortfolioView';
 import SideTab from './components/SideTab';
 import PortfolioSummary from './components/PortfolioSummary';
+import UserHeader from './components/UserHeader';
 import { DealsProvider, useDeals } from './contexts/DealsContext';
 import { formatNumberWithCommas } from './utils/formatting';
 import './styles/results.css';
@@ -388,6 +389,61 @@ const AppContent = () => {
     localStorage.removeItem('token');
     setActiveTab('calculator'); // Reset to default tab
   };
+
+  // טעינת נתוני משתמש מ-localStorage בטעינת הדף
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (savedToken && savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        
+        // בדיקה בסיסית של תוקף הטוקן
+        const tokenParts = savedToken.split('.');
+        if (tokenParts.length === 3) {
+          try {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            const currentTime = Date.now() / 1000;
+            
+            // אם הטוקן פג תוקף, נקה אותו והצג הודעה
+            if (payload.exp && payload.exp < currentTime) {
+              console.log('Token expired, clearing localStorage');
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              
+              // הצג הודעה למשתמש
+              setNotification({
+                message: 'תוקף ההתחברות פג. אנא התחבר מחדש.',
+                success: false
+              });
+              
+              // הסתר הודעה אחרי 5 שניות
+              setTimeout(() => {
+                setNotification(null);
+              }, 5000);
+              
+              return;
+            }
+          } catch (tokenError) {
+            console.error('Error parsing token:', tokenError);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            return;
+          }
+        }
+        
+        setToken(savedToken);
+        setUser(parsedUser);
+        console.log('User loaded from localStorage:', parsedUser.email);
+      } catch (error) {
+        console.error('Error parsing saved user data:', error);
+        // נקה נתונים פגומים
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+  }, []); // רק בטעינה הראשונה
 
   // Check DB connection status
   useEffect(() => {
@@ -1008,6 +1064,7 @@ const AppContent = () => {
   // Always return the same structure
   return isAuthenticated ? (
     <AppContainer>
+      <UserHeader user={user} onLogout={handleLogout} />
       <SideTab 
         onNavigate={handleTabChange}
         user={user}
@@ -1019,61 +1076,6 @@ const AppContent = () => {
       />
       <AppLayout>
         <MainContentWrapper>
-          <Header>
-            <HeaderContent>
-              <Logo src="/assets/logo.png" alt="לוגו החברה" onError={(e) => e.target.style.display = 'none'} />
-              <HeaderTitle>מחשבון השקעות נדל"ן</HeaderTitle>
-              <HeaderSubtitle>כלי מתקדם לחישוב כדאיות השקעה בנכסי נדל"ן ותחזית רווחיות ארוכת טווח</HeaderSubtitle>
-            </HeaderContent>
-            
-            {dbConnectionStatus && (
-              <DbStatusIndicator>
-                <StatusDot connected={dbConnectionStatus} /> מחובר למסד נתונים
-              </DbStatusIndicator>
-            )}
-          </Header>
-          
-          <MainNavbar>
-            <NavContent>
-              <NavLinks>
-                <NavLink 
-                  className={activeTab === 'calculator' ? 'active' : ''} 
-                  onClick={() => handleTabChange('calculator')}
-                >
-                  חישוב חדש
-                </NavLink>
-                {user && user.role !== 'admin' && (
-                  <>
-                    <NavLink 
-                      className={activeTab === 'portfolio-summary' ? 'active' : ''} 
-                      onClick={() => handleTabChange('portfolio-summary')}
-                    >
-                      סיכום התיק
-                    </NavLink>
-                    <NavLink 
-                      className={activeTab === 'portfolio' ? 'active' : ''} 
-                      onClick={() => handleTabChange('portfolio')}
-                    >
-                      התיק שלי
-                    </NavLink>
-                  </>
-                )}
-                {user && user.role === 'admin' && (
-                  <NavLink 
-                    className={activeTab === 'clients' ? 'active' : ''} 
-                    onClick={() => handleTabChange('clients')}
-                  >
-                    תיקי לקוחות
-                  </NavLink>
-                )}
-              </NavLinks>
-              <div>
-                {user && <UserInfo>שלום, {user.fullName || user.email}</UserInfo>}
-                <LogoutButton onClick={handleLogout}>התנתק</LogoutButton>
-              </div>
-            </NavContent>
-          </MainNavbar>
-          
           <ContentArea>
             {activeTab === 'calculator' && (
               <>

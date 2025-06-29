@@ -68,22 +68,27 @@ axios.interceptors.response.use(
     // טיפול בשגיאות
     if (error.response?.status === 401) {
       // משתמש לא מורשה - ה-token פג תוקף או לא תקין
-      console.log('Authentication error detected');
+      console.log('Authentication error detected (401)');
       
       // בדוק אם זה לא קריאה למסלול הרגיש של התחברות/הרשמה
       const url = error.config?.url || '';
       const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
       
-      // אם זה לא endpoint של אימות, אל תעשה logout אוטומטי
-      if (!isAuthEndpoint) {
-        console.log('401 error on non-auth endpoint, not logging out automatically');
+      // אם זה endpoint של אימות, אל תעשה logout אוטומטי
+      if (isAuthEndpoint) {
+        console.log('401 error on auth endpoint, not clearing tokens');
         return Promise.reject(error);
       }
       
-      // רק עבור endpoints של אימות - נקה ועשה logout
+      // עבור endpoints אחרים - נקה טוקנים פגים
+      console.log('Token appears to be invalid/expired, clearing localStorage');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.reload();
+      
+      // רענן את הדף כדי שהמשתמש יראה את מסך ההתחברות
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
     
     return Promise.reject(error);

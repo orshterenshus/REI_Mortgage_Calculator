@@ -67,15 +67,10 @@ const SideTab = ({ onNavigate, user, activeTab, isOpen, onClose, defaultSection,
     }
   };
 
-  const handleClose = () => {
-    setExpandedSection(null);
-    onClose();
-  };
-
   return (
-    <div className={`side-tab-container ${isOpen ? 'expanded' : ''}`}>
-      {/* כפתורי הסיידטאב הקטנים */}
-      {!isOpen && (
+    <>
+      {/* הסיידבר הקטן - תמיד נראה */}
+      <div className="side-tab-container">
         <div className="side-tab-buttons">
           <div 
             className={`side-tab-button invest ${activeTab === 'calculator' ? 'active' : ''}`}
@@ -99,19 +94,11 @@ const SideTab = ({ onNavigate, user, activeTab, isOpen, onClose, defaultSection,
             <span>ניהול</span>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* תפריט מורחב */}
+      {/* תפריט מורחב - overlay נפרד */}
       {isOpen && (
-        <div className="side-tab-expanded">
-          {/* כפתור סגירה */}
-          <div className="close-button" onClick={handleClose}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-
-          {/* תפריט ראשי */}
+        <div className={`side-tab-expanded ${isOpen ? 'show' : ''}`}>
           <div className="sidebar-content">
             {expandedSection === 'invest' && (
               /* תפריט השקעות - רק חישוב חדש */
@@ -249,7 +236,7 @@ const SideTab = ({ onNavigate, user, activeTab, isOpen, onClose, defaultSection,
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

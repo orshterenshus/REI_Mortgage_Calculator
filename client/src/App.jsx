@@ -67,6 +67,46 @@ import { DealsProvider, useDeals } from './contexts/DealsContext';
 import { formatNumberWithCommas } from './utils/formatting';
 import './styles/results.css';
 
+const TopRightSquare = styled.div`
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 95px;
+  height: 65px; /* גובה מתאים ל-header */
+  background: #2d3338;
+  z-index: 1002; /* מעל ה-sidebar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  @media (max-width: 768px) {
+    width: 50px;
+    height: 88px; /* גובה קטן יותר במובייל */
+  }
+`;
+
+const ToggleButton = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+  }
+  
+  @media (max-width: 768px) {
+    width: 35px;
+    height: 35px;
+  }
+`;
+
 const AppContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -76,7 +116,6 @@ const AppContainer = styled.div`
 
 const AppLayout = styled.div`
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
   width: 100%;
 `;
@@ -86,14 +125,21 @@ const MainContentWrapper = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
+  margin-right: ${props => props.sidebarExpanded ? '280px' : '95px'}; /* מקום ל-sidebar */
+  transition: margin-right 0.3s ease;
+  padding-top: 115px; /* מקום ל-header */
+  
+  @media (max-width: 768px) {
+    margin-right: ${props => props.sidebarExpanded ? '250px' : '50px'};
+    padding-top: 88px; /* גובה קטן יותר במובייל */
+  }
 `;
 
 const ContentArea = styled.main`
   flex: 1;
-  padding: 2rem 105px 2rem 0;
+  padding: 2rem;
   background-color: var(--background);
   min-width: 0;
-  transition: padding-right 0.3s ease;
 `;
 
 const Header = styled.header`
@@ -135,7 +181,7 @@ const HeaderTitle = styled.h1`
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
 `;
 
 const HeaderSubtitle = styled.p`
@@ -318,6 +364,8 @@ const AppContent = () => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [activeTab, setActiveTab] = useState('calculator');
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [lastOpenedSection, setLastOpenedSection] = useState('manage'); // זיכרון הסקשן האחרון
   const [inputs, setInputs] = useState({});
   const [results, setResults] = useState(null);
   const [forecast, setForecast] = useState([]);
@@ -1058,6 +1106,34 @@ const AppContent = () => {
     }
   };
 
+  // פונקציה לפתיחה/סגירה של הסיידבר מהכפתור בריבוע
+  const handleSidebarToggle = () => {
+    if (sidebarExpanded) {
+      // אם הסיידבר פתוח, סגור אותו
+      setSidebarExpanded(false);
+    } else {
+      // אם הסיידבר סגור, פתח אותו עם הסקשן המתאים
+      setSidebarExpanded(true);
+      
+      // קבע איזה סקשן לפתוח בהתאם לטאב הפעיל
+      if (activeTab === 'calculator') {
+        setLastOpenedSection('invest');
+      } else if (['portfolio-summary', 'portfolio', 'clients'].includes(activeTab)) {
+        setLastOpenedSection('manage');
+      }
+      // אחרת השתמש בסקשן האחרון שנשמר
+    }
+  };
+
+  // פונקציה לעדכון הסקשן האחרון
+  const handleSectionChange = (section) => {
+    setLastOpenedSection(section);
+    // אם הסיידבר סגור ומשנים סקשן, פתח אותו
+    if (!sidebarExpanded) {
+      setSidebarExpanded(true);
+    }
+  };
+
   // Determine if user is authenticated
   const isAuthenticated = user && token;
 
@@ -1065,17 +1141,34 @@ const AppContent = () => {
   return isAuthenticated ? (
     <AppContainer>
       <UserHeader user={user} onLogout={handleLogout} />
+      <TopRightSquare>
+        <ToggleButton onClick={handleSidebarToggle}>
+          {sidebarExpanded ? (
+            // חץ לסגירה
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            // 3 קווים לפתיחה
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="2"/>
+              <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="2"/>
+              <line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          )}
+        </ToggleButton>
+      </TopRightSquare>
       <SideTab 
         onNavigate={handleTabChange}
         user={user}
         activeTab={activeTab}
-        onToggle={(isExpanded) => {
-          // Handle sidebar expansion if needed
-          console.log('Sidebar expanded:', isExpanded);
-        }}
+        isOpen={sidebarExpanded}
+        onClose={() => setSidebarExpanded(false)}
+        defaultSection={lastOpenedSection}
+        onSectionChange={handleSectionChange}
       />
       <AppLayout>
-        <MainContentWrapper>
+        <MainContentWrapper sidebarExpanded={sidebarExpanded}>
           <ContentArea>
             {activeTab === 'calculator' && (
               <>

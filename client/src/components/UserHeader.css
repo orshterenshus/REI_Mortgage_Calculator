@@ -1,10 +1,13 @@
 /* Header עליון עם תפריט משתמש */
 .user-header {
-  background: var(--primary);
-  color: white;
+  background: #f5f7fa; /* רקע אפור בהיר - כמו הסיידבר */
+  color: #333; /* טקסט כהה */
   padding: 2rem 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
 }
 
@@ -18,8 +21,8 @@
 }
 
 .header-content {
-  position: absolute;
-  right: 110px; /* יותר רחוק מהקצה */
+  position: fixed;
+  right: 40px; /* יותר רחוק מהקצה */
   display: flex;
   align-items: center;
 }
@@ -37,7 +40,7 @@
 }
 
 .user-menu-button {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1); /* רקע כהה על רקע לבן */
   border: none;
   border-radius: 50%;
   width: 42px;
@@ -51,13 +54,13 @@
 }
 
 .user-menu-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.2); /* כהה יותר בהובר */
   transform: scale(1.05);
 }
 
 .user-icon {
   font-size: 1.4rem;
-  color: white;
+  color: #333; /* צבע כהה על רקע לבן */
 }
 
 /* תפריט נפתח */

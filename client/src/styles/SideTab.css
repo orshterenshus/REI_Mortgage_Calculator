@@ -10,13 +10,13 @@
 
 .side-tab-container {
   position: fixed;
-  top: 0;
+  top: 65px; /* יותר נמוך כדי לא לעלות על ה-header */
   right: 0;
-  height: 100vh;
+  height: calc(100vh - 65px); /* גובה מתחת ל-header */
   width: 95px;
   background: #2d3338;
   transition: all 0.3s ease;
-  z-index: 1000;
+  z-index: 1001;
   box-shadow: -2px 0 10px rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
@@ -25,31 +25,32 @@
   width: 280px;
 }
 
-/* כפתור הרחבה/כיווץ */
-.side-tab-toggle {
-  position: absolute;
-  top: 20px;
-  right: 28.5px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: white;
-  z-index: 10;
+/* חלק עליון קבוע - לא מתרחב */
+.side-tab-top-section {
+  height: 88px; /* גובה ה-header */
+  width: 95px;
+  background: #2d3338;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1002;
 }
 
-.side-tab-toggle:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
+/* חלק תחתון - מתרחב */
+.side-tab-bottom-section {
+  flex: 1;
+  width: 95px;
+  background: #2d3338;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.side-tab-container.expanded .side-tab-bottom-section {
+  width: 280px;
 }
 
 /* כפתורי הסיידטאב הקטנים */
 .side-tab-buttons {
-  margin-top: 80px;
+  margin-top: 20px;
   padding: 0 10px;
 }
 
@@ -97,13 +98,37 @@
   right: 0;
   width: 100%;
   height: 100%;
-  background: #2d3338;
-  padding: 80px 20px 20px;
+  background: #f5f7fa; /* רקע אפור בהיר */
+  padding: 20px 20px 20px 20px;
   overflow-y: auto;
 }
 
+/* כפתור סגירה */
+.close-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 30px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #333; /* צבע כהה */
+  z-index: 10;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
 .sidebar-content {
-  color: white;
+  color: #333; /* טקסט שחור */
+  padding-top: 60px; /* מרווח לכפתור הסגירה */
 }
 
 .sidebar-section {
@@ -111,12 +136,12 @@
 }
 
 .section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 15px;
+  font-size: 15px; /* גודל יותר גדול */
+  font-weight: 700; /* עובי יותר גדול */
+  color: #333; /* צבע כהה יותר */
+  margin-bottom: 18px; /* מרווח יותר גדול */
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px; /* מרווח בין אותיות יותר גדול */
 }
 
 .sidebar-item {
@@ -127,22 +152,24 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: rgba(255, 255, 255, 0.9);
+  color: #333; /* טקסט שחור */
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: transparent;
+  border: 1px solid transparent;
 }
 
 .sidebar-item:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+  background: rgba(245, 166, 35, 0.1); /* רקע זהב עדין בהובר */
+  color: #F5A623; /* טקסט זהב בהובר */
   transform: translateX(-5px);
+  border: 1px solid rgba(245, 166, 35, 0.3); /* מסגרת זהב עדין */
 }
 
 .sidebar-item.highlighted {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: rgba(245, 166, 35, 0.15); /* רקע זהב עדין לכפתור פעיל */
+  color: #F5A623; /* טקסט זהב לכפתור פעיל */
   font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(245, 166, 35, 0.5); /* מסגרת זהב */
 }
 
 .item-icon {
@@ -197,15 +224,15 @@
     width: 250px;
   }
   
-  .side-tab-toggle {
-    width: 35px;
-    height: 35px;
-    top: 15px;
-    right: 15px;
-  }
-  
   .sidebar-item {
     font-size: 13px;
     padding: 10px 12px;
+  }
+  
+  .close-button {
+    width: 25px;
+    height: 25px;
+    top: 15px;
+    left: 15px;
   }
 } 

@@ -11,83 +11,71 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/SideTab.css';
 
-const SideTab = ({ onNavigate, user, onToggle, activeTab }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(null); // 'invest' או 'manage'
+const SideTab = ({ onNavigate, user, activeTab, isOpen, onClose, defaultSection, onSectionChange }) => {
+  const [expandedSection, setExpandedSection] = useState(null);
 
-  // עדכון מצב הסיידבר ברכיב האב
+  // כשה-sidebar נפתח, קבע את הסקשן בהתאם ל-defaultSection
   useEffect(() => {
-    if (onToggle) {
-      onToggle(isExpanded);
+    if (isOpen && defaultSection) {
+      setExpandedSection(defaultSection);
+    } else if (!isOpen) {
+      setExpandedSection(null);
     }
-  }, [isExpanded, onToggle]);
+  }, [isOpen, defaultSection]);
 
   const handleCalculatorClick = () => {
     onNavigate('calculator');
-    setIsExpanded(false);
-    setExpandedSection(null);
+    onClose();
   };
 
   const handlePortfolioSummaryClick = () => {
     onNavigate('portfolio-summary');
-    setIsExpanded(false);
-    setExpandedSection(null);
+    onClose();
   };
 
   const handleMyPortfolioClick = () => {
     onNavigate('portfolio');
-    setIsExpanded(false);
-    setExpandedSection(null);
+    onClose();
   };
 
   const handleClientsClick = () => {
     onNavigate('clients');
-    setIsExpanded(false);
-    setExpandedSection(null);
+    onClose();
   };
 
   const handleInvestClick = () => {
-    setIsExpanded(true);
-    setExpandedSection('invest');
+    if (isOpen) {
+      // אם הסיידבר פתוח, רק שנה סקשן
+      setExpandedSection('invest');
+      onSectionChange('invest');
+    } else {
+      // אם הסיידבר סגור, פתח אותו עם סקשן השקעות
+      onSectionChange('invest');
+      // הסיידבר יפתח אוטומטית דרך ה-parent
+    }
   };
 
   const handleManageClick = () => {
-    setIsExpanded(true);
-    setExpandedSection('manage');
+    if (isOpen) {
+      // אם הסיידבר פתוח, רק שנה סקשן
+      setExpandedSection('manage');
+      onSectionChange('manage');
+    } else {
+      // אם הסיידבר סגור, פתח אותו עם סקשן ניהול
+      onSectionChange('manage');
+      // הסיידבר יפתח אוטומטית דרך ה-parent
+    }
+  };
+
+  const handleClose = () => {
+    setExpandedSection(null);
+    onClose();
   };
 
   return (
-    <div className={`side-tab-container ${isExpanded ? 'expanded' : ''}`}>
-      {/* כפתור הרחבה/כיווץ */}
-      <div 
-        className="side-tab-toggle"
-        onClick={() => {
-          if (isExpanded) {
-            setIsExpanded(false);
-            setExpandedSection(null);
-          } else {
-            setIsExpanded(true);
-            setExpandedSection('manage');
-          }
-        }}
-      >
-        {isExpanded ? (
-          // חץ לסגירה
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        ) : (
-          // 3 קווים לפתיחה
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="2"/>
-            <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="2"/>
-            <line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" strokeWidth="2"/>
-          </svg>
-        )}
-      </div>
-
+    <div className={`side-tab-container ${isOpen ? 'expanded' : ''}`}>
       {/* כפתורי הסיידטאב הקטנים */}
-      {!isExpanded && (
+      {!isOpen && (
         <div className="side-tab-buttons">
           <div 
             className={`side-tab-button invest ${activeTab === 'calculator' ? 'active' : ''}`}
@@ -114,8 +102,15 @@ const SideTab = ({ onNavigate, user, onToggle, activeTab }) => {
       )}
 
       {/* תפריט מורחב */}
-      {isExpanded && (
+      {isOpen && (
         <div className="side-tab-expanded">
+          {/* כפתור סגירה */}
+          <div className="close-button" onClick={handleClose}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+
           {/* תפריט ראשי */}
           <div className="sidebar-content">
             {expandedSection === 'invest' && (
@@ -227,6 +222,29 @@ const SideTab = ({ onNavigate, user, onToggle, activeTab }) => {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* אם אף סקשן לא נבחר, הצג הודעה או תפריט ברירת מחדל */}
+            {!expandedSection && (
+              <div className="sidebar-section">
+                <div className="sidebar-item" onClick={() => setExpandedSection('invest')}>
+                  <div className="item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 13H7L9 21L15 3L17 13H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <span>השקעות</span>
+                </div>
+                
+                <div className="sidebar-item" onClick={() => setExpandedSection('manage')}>
+                  <div className="item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 11H15M9 15H12M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <span>ניהול</span>
+                </div>
+              </div>
             )}
           </div>
         </div>
